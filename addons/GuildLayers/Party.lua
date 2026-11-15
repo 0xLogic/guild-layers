@@ -9,8 +9,10 @@ function GuildLayersParty(api)
     local token=tostring(math.floor(api.now()*1000)).."-"..P.sequence
     P.pending={name=name,token=token,untilAt=api.now()+20}
     P.nextRequest=api.now()+5
-    if not api.send(name,"JOIN|"..token) then P.pending=nil; return "Game refused the request." end
-    return "Requesting "..name.."; their Guild Layers addon must be enabled.",true
+    local sent
+    if api.sendJoin then sent=api.sendJoin(name,token) else sent=api.send(name,"JOIN|"..token) end
+    if not sent then P.pending=nil; return "Game refused the request or required layer data is unavailable." end
+    return "Requesting "..name.."; waiting for their addon to invite you.",true
   end
   function P.receive(text,sender)
     if type(text)~="string" or #text>160 or not api.member(sender) then return end

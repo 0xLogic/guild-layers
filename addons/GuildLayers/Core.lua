@@ -7,6 +7,7 @@ local lastPresenceQuery=-100
 local presenceReplies={}
 local presenceStats={received=0,sent=0,lastResult="not sent"}
 local presenceAsked={}
+local stockAsked={}
 local function public(v) return not issecretvalue or not issecretvalue(v) end
 local function key(n)
   if not public(n) or type(n)~="string" then return "" end
@@ -103,6 +104,13 @@ local function queryPresence()
   pcall(C_ChatInfo.SendAddonMessage,PREFIX,"PING|1","GUILD")
   advertise()
 end
+local function requestStock(target,wanted)
+  if not layer or not mapID or IsInGroup() or InCombatLockdown() or (IsInInstance and IsInInstance()) then return false end
+  local route=wanted and ("want "..wanted) or ("not "..layer)
+  local text="inv layer <LS "..tostring(mapID).." "..route..">"
+  local ok,result=pcall(C_ChatInfo.SendAddonMessage,"LayerSwap",text,"WHISPER",target)
+  return ok and public(result) and result==0
+end
 local function presenceSweep()
   if not ui or not ui.frame:IsShown() or not IsInGuild() then return end
   ui.roster()
@@ -117,6 +125,13 @@ local function presenceSweep()
   for i=1,math.min(2,#names) do
     local n=names[i]; presenceAsked[key(n)]=GetTime()
     pcall(C_ChatInfo.SendAddonMessage,PREFIX,"PING|1","WHISPER",n)
+    -- Stock LayerSwap has no presence-only query. A real request elicits its
+    -- standard heard reply and can provoke an invitation; never auto-accept it.
+    local p=peers[key(n)]
+    if not party.pending and (not p or p.kind=="LayerSwap" or GetTime()-p.at>90) and
+       (not stockAsked[key(n)] or GetTime()-stockAsked[key(n)]>=120) then
+      if requestStock(n) then stockAsked[key(n)]=GetTime() end
+    end
   end
 end
 local f=CreateFrame("Frame")
@@ -127,6 +142,15 @@ f:SetScript("OnEvent",function(_,event,...)
     if GuildLayersDB.hosting==nil then GuildLayersDB.hosting=true end
     if GuildLayersDB.addonOnly==nil then GuildLayersDB.addonOnly=true end
     party=GuildLayersParty({now=GetTime,key=key,member=member,grouped=IsInGroup,send=send,status=status,
+      sendJoin=function(n,token)
+        local p=peers[key(n)]
+        if p and p.kind=="LayerSwap" and GetTime()-p.at<=90 then
+          local wanted
+          for _,r in ipairs(ui.rows()) do if key(r.name)==key(n) then wanted=r.layer; break end end
+          return requestStock(n,wanted)
+        end
+        return send(n,"JOIN|"..token)
+      end,
       canHost=canHost,
       invite=function(n) return action(C_PartyInfo and C_PartyInfo.InviteUnit or InviteUnit,n) end,
       accept=function() return action(AcceptGroup) end,
@@ -141,6 +165,15 @@ f:SetScript("OnEvent",function(_,event,...)
       zoneName=zoneName,book=function() end,canProbe=function() return false,"Use Guild Layers on both players." end,
       guildRequest=party.request,
       discoverPresence=queryPresence,
+      observeStock=function(n,ready)
+        if not member(n) then return end
+        presenceStats.received=presenceStats.received+1
+        local p=peers[key(n)]
+        if not p or p.kind=="LayerSwap" or GetTime()-p.at>90 then
+          peers[key(n)]={kind="LayerSwap",ready=ready,at=GetTime()}
+        end
+      end,
+      addonKind=function(n) local p=peers[key(n)]; return p and GetTime()-p.at<=90 and p.kind or nil end,
       installed=function(n) local p=peers[key(n)]; return p~=nil and GetTime()-p.at<=90 end,
       filterEnabled=function() return GuildLayersDB.addonOnly end,
       toggleFilter=function() GuildLayersDB.addonOnly=not GuildLayersDB.addonOnly; return GuildLayersDB.addonOnly end,
@@ -194,7 +227,7 @@ f:SetScript("OnEvent",function(_,event,...)
         end
       elseif (channel=="GUILD" or channel=="WHISPER") and member(sender) and (text=="CAP|1" or text=="CAP|0") then
         presenceStats.received=presenceStats.received+1
-        peers[key(sender)]={ready=text=="CAP|1",at=GetTime()}
+        peers[key(sender)]={kind="Guild Layers",ready=text=="CAP|1",at=GetTime()}
         if ui.frame:IsShown() then ui.render() end
       elseif (channel=="GUILD" or channel=="WHISPER") and member(sender) and type(text)=="string" and text:match("^VER|") then
         local version=text:match("^VER|(.+)$")

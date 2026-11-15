@@ -110,6 +110,13 @@ class GuildTests(unittest.TestCase):
    assert(g.rows()[1].state=="Layer unknown")
    g.receive("LayerSwap","heard Me|200-1|1446|h","GUILD","Stranger")
    assert(g.rows()[1].state=="Layer unknown")''')
+ def test_stock_reply_identifies_addon_even_without_known_layer(self):
+  self.check('''observed=0
+   api.observeStock=function(n,hosting) observed=observed+1; assert(n=="Alice" and not hosting) end
+   g.receive("LayerSwap","heard Me|-|1446|-","WHISPER","Alice")
+   assert(observed==1 and g.rows()[1].state=="Layer unknown")
+   g.receive("LayerSwap","heard Other|200-1|1446|h","WHISPER","Alice")
+   assert(observed==1)''')
  def test_automatic_discovery_is_bounded_and_never_requests_invites(self):
   self.check('''g.poll(); assert(queries==1 and requests==0 and recipient==nil)
    g.poll(); clock=129; g.poll(); assert(queries==1)

@@ -56,8 +56,9 @@ function LayerSwapGuildMembers(api)
   function G.receive(prefix,text,channel,sender)
     if prefix=="LayerSwap" then
       if (channel~="GUILD" and channel~="WHISPER") or not G.members[key(sender)] or type(text)~="string" or #text>255 then return end
-      local target,layer,zone=text:match("^heard (.-)|([^|]*)|([^|]*)|[h%-]$")
+      local target,layer,zone,hosting=text:match("^heard (.-)|([^|]*)|([^|]*)|([h%-])$")
       if not target or (channel=="WHISPER" and key(target)~=key(api.name())) then return end
+      if api.observeStock then api.observeStock(sender,hosting=="h") end
       if layer:match("^%d+%-%d+$") or layer:match("^%d+$") then
         G.reports[key(sender)]={layer=layer,zone=api.zoneName(zone),at=GetTime()}
       else
@@ -137,7 +138,7 @@ function LayerSwapGuildMembers(api)
         else state="Ask to join" end
       end
       rows[#rows+1]={name=m.name,level=m.level,class=m.class,layer=r and r.layer,
-        zone=r and r.zone or m.zone,state=state}
+        zone=r and r.zone or m.zone,state=state,addon=api.addonKind and api.addonKind(m.name)}
       end
     end
     table.sort(rows,function(a,b)
@@ -200,7 +201,7 @@ function LayerSwapGuildMembers(api)
     caption:SetPoint("LEFT",filter,"RIGHT",2,0); caption:SetText("Addon only")
     filter:SetScript("OnClick",function(self) self:SetChecked(api.toggleFilter()); G.render() end)
   end
-  subtitle:SetText(api.guildRequest and "Click to join · Guild Layers required" or "Click any guildmate to request an invite · hosts may invite you")
+  subtitle:SetText(api.guildRequest and "Click to join · GL / LS supported" or "Click any guildmate to request an invite · hosts may invite you")
   local transition=label(-55); transition:SetHeight(34)
   local status=label(-394); status:SetHeight(42)
   local function notice(text)
@@ -222,7 +223,8 @@ function LayerSwapGuildMembers(api)
       local r=rows[(G.page-1)*PAGE+i]
       if r then
         b.member=r.name
-        b:SetText(r.name.." · "..tostring(r.level or "?").." "..(r.class or "").." · "..G.layerLabel(r.layer,r.zone).." · "..r.state)
+        local addon=r.addon and (r.addon=="LayerSwap" and " [LS]" or " [GL]") or ""
+        b:SetText(r.name..addon.." · "..tostring(r.level or "?").." "..(r.class or "").." · "..G.layerLabel(r.layer,r.zone).." · "..r.state)
         b:SetEnabled(true); b:Show()
       else b:Hide() end
     end
@@ -230,7 +232,7 @@ function LayerSwapGuildMembers(api)
       local known=0
       for _,r in ipairs(rows) do if r.layer then known=known+1 end end
       if #rows==0 then status:SetText(api.filterEnabled and api.filterEnabled() and
-        "No online guildmates with a recent Guild Layers report yet." or "No other online guildmates in the current roster.")
+        "No online guildmates with a recent Guild Layers or LayerSwap report yet." or "No other online guildmates in the current roster.")
       else status:SetText(known.." / "..#rows.." layers reported. "..
         (api.guildRequest and "Click a member to join. Layer transfer depends on zone and server rules." or
          (not G.stockEnabled and "Automatic requests stopped." or G.stockStatus or "Discovering guild layers…"))) end
@@ -268,6 +270,7 @@ function LayerSwapGuildMembers(api)
     if f:IsShown() then G.poll(); G.stockTick(); G.render() end
   end)
   pcall(C_ChatInfo.RegisterAddonMessagePrefix,PREFIX)
+  pcall(C_ChatInfo.RegisterAddonMessagePrefix,"LayerSwap")
   SLASH_LAYERSWAPGUILD1="/lsguild"
   SlashCmdList.LAYERSWAPGUILD=function() f:SetShown(not f:IsShown()) end
   C_Timer.NewTicker(5,function()

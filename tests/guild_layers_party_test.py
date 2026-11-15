@@ -121,6 +121,24 @@ class PartyTests(unittest.TestCase):
    ticker(); assert(joins==0)
    checked=true; distance=2000; ticker(); assert(joins==0)
    distance=100; ticker(); assert(joins==1)
-   ticker(); assert(joins==1)''')
+   ticker(); assert(joins==1)
+   GuildLayersDB.autoEscape=false; GuildLayersDB.addonOnly=true
+   clock=350; ticker()
+   GuildLayers.frame.scripts.OnEvent(GuildLayers.frame,"CHAT_MSG_ADDON","LayerSwap",
+     "heard Me|8000-2|1446|h","WHISPER","Mojow Joejoe-Realm")
+   local rows=GuildLayers.rows()
+   assert(#rows==1 and rows[1].name=="Mojow Joejoe" and rows[1].addon=="LayerSwap")
+   assert(rows[1].layer=="8000-2" and rows[1].state=="Ask to join")
+   stockRequests=0
+   C_ChatInfo.SendAddonMessage=function(prefix,text,channel,target)
+     if prefix=="LayerSwap" then
+       assert(text=="inv layer <LS 1446 want 8000-2>" and channel=="WHISPER" and target=="Mojow Joejoe")
+       stockRequests=stockRequests+1
+     end
+     return 0
+   end
+   GuildLayers.ask("Mojow Joejoe"); assert(stockRequests==1)
+   coreFrame.scripts.OnEvent(coreFrame,"PARTY_INVITE_REQUEST","Mojow Joejoe-Realm")
+   assert(accepts==2)''')
 
 if __name__=='__main__': unittest.main()

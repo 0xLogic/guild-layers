@@ -1,8 +1,9 @@
-Guild Layers 1.3.0
+Guild Layers 1.4.0
 
-- Header compares your layer with the requested destination; rows use Layer A/B/C labels.
-- Labels remain stable within each zone for the UI session. They are local aliases, not server-wide identifiers.
-- Manual and automatic requests record their destination only after request acceptance.
-- Requesting/joining alone never claims a layer change. Confirmation requires observing the different requested layer in the same zone.
-- 30 headless tests pass. Live display/transfer and Mojow's presence still require verification.
+- Standalone LayerSwap compatibility: registers its addon-message prefix and reads standard layer/zone/hosting replies.
+- Addon-only now includes verified LayerSwap users. Rows show [GL] or [LS].
+- Bounded standard LayerSwap discovery requests can provoke host invitations; discovery does not automatically accept them.
+- Clicking a LayerSwap member uses the standard request protocol and accepts only their matching invitation. Stock hosting and zone restrictions still apply.
+- Fresh Guild Layers presence takes precedence when both addons are installed.
+- 31 headless tests pass, including a LayerSwap-only Mojow Joejoe report, filtering, request encoding and matched acceptance. Actual live presence/transfer remains unverified.
 - Reload the UI after updating.

@@ -1,8 +1,25 @@
-# Guild Layers 1.3.0 — WoW Forever
+# Guild Layers 1.4.0 — WoW Forever
 
 Install the GuildLayers folder in Interface/AddOns on both players, enable it,
 then open `/guildlayers` (also `/lsguild`). LayerSwap is not required. This package
 contains independently maintained guild UI and protocol code, not LayerSwap's source.
+
+## LayerSwap compatibility
+
+Guildmates running standard LayerSwap can now appear under **Addon only** after a
+valid `heard` reply. Rows identify Guild Layers as **[GL]** and LayerSwap as **[LS]**.
+The standalone addon registers LayerSwap's message prefix and reads fresh reported
+layer/zone/hosting state. Unknown layers remain unknown, but a valid unknown-layer
+reply still establishes that LayerSwap is running.
+
+While the panel is open, bounded direct LayerSwap requests discover missing peers
+(two candidates per five seconds, at most once per member per two minutes). These
+are real swap requests, not read-only presence queries: hosts may invite you.
+Discovery does not auto-accept invitations. Clicking a verified LayerSwap member
+uses the standard LayerSwap request and arms acceptance only for that member's
+matching invitation. Their hosting switch, zone checks and server rules still apply.
+Known fresh Guild Layers capability takes precedence when both addons are installed.
+LayerSwap users do not need this addon to report layers or answer requests.
 
 The header shows your current layer and the requested destination as **Layer A,
 Layer B, ...**. Letters are assigned on observation and remain stable per zone for
@@ -35,7 +52,7 @@ as a background service. A user-managed scheduled invocation can check for updat
 The addon itself cannot fetch GitHub or replace its own files.
 
 **Addon only**, enabled by default, filters to online members whose Guild Layers
-capability advertisement was received in the last 90 seconds. Hosting-off members
+capability or LayerSwap reply was received in the last 90 seconds. Hosting-off members
 still appear. Advertisements refresh every 30 seconds; a newly opened client may
 need to wait for the next one. This reports recent presence, not installed files.
 
