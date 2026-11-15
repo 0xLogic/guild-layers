@@ -174,7 +174,8 @@ function LayerSwapGuildMembers(api)
   end
   local f=CreateFrame("Frame","LayerSwapGuildPanel",UIParent)
   G.frame=f
-  f:SetSize(490,450); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
+  local extra=api.setRadius and 24 or 0
+  f:SetSize(490,450+extra); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
   f:SetMovable(true); f:EnableMouse(true); f:RegisterForDrag("LeftButton")
   f:SetScript("OnDragStart",f.StartMoving); f:SetScript("OnDragStop",f.StopMovingOrSizing)
   local bg=f:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(.04,.05,.07,.95)
@@ -203,7 +204,26 @@ function LayerSwapGuildMembers(api)
   end
   subtitle:SetText(api.guildRequest and "Click to join · GL / LS supported" or "Click any guildmate to request an invite · hosts may invite you")
   local transition=label(-55); transition:SetHeight(34)
-  local status=label(-394); status:SetHeight(42)
+  if api.setRadius then
+    local caption=label(-91); caption:SetWidth(125); caption:SetText("Horde radius (yards)")
+    local input=CreateFrame("EditBox",nil,f,"InputBoxTemplate")
+    input:SetSize(55,22); input:SetPoint("TOPLEFT",150,-84)
+    input:SetAutoFocus(false); input:SetMaxLetters(5); input:SetText(tostring(api.radius()))
+    input:SetScript("OnEnterPressed",function(self)
+      local valid=api.setRadius(self:GetText())
+      self:SetText(tostring(api.radius())); self:ClearFocus()
+      G.setStatus(valid and "Horde distance saved." or "Enter a distance from 5 to 100 yards.")
+    end)
+    input:SetScript("OnEscapePressed",function(self) self:SetText(tostring(api.radius())); self:ClearFocus() end)
+    if api.toggleAccept then
+      local accept=CreateFrame("CheckButton",nil,f,"UICheckButtonTemplate")
+      accept:SetSize(24,24); accept:SetPoint("TOPLEFT",225,-84); accept:SetChecked(api.acceptEnabled())
+      local text=accept:CreateFontString(nil,"OVERLAY","GameFontNormalSmall")
+      text:SetPoint("LEFT",accept,"RIGHT",2,0); text:SetText("Accept guild invites")
+      accept:SetScript("OnClick",function(self) self:SetChecked(api.toggleAccept()) end)
+    end
+  end
+  local status=label(-394-extra); status:SetHeight(42)
   local function notice(text)
     G.noticeUntil=GetTime()+15; status:SetText(text)
   end
@@ -211,7 +231,7 @@ function LayerSwapGuildMembers(api)
   local buttons={}
   for i=1,PAGE do
     local b=CreateFrame("Button",nil,f,"UIPanelButtonTemplate")
-    b:SetSize(466,27); b:SetPoint("TOPLEFT",12,-94-(i-1)*29)
+    b:SetSize(466,27); b:SetPoint("TOPLEFT",12,-94-extra-(i-1)*29)
     b:SetScript("OnClick",function(self) notice(G.ask(self.member)); G.render() end)
     buttons[i]=b
   end

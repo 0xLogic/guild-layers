@@ -1,9 +1,8 @@
-Guild Layers 1.4.0
+Guild Layers 1.5.0
 
-- Standalone LayerSwap compatibility: registers its addon-message prefix and reads standard layer/zone/hosting replies.
-- Addon-only now includes verified LayerSwap users. Rows show [GL] or [LS].
-- Bounded standard LayerSwap discovery requests can provoke host invitations; discovery does not automatically accept them.
-- Clicking a LayerSwap member uses the standard request protocol and accepts only their matching invitation. Stock hosting and zone restrictions still apply.
-- Fresh Guild Layers presence takes precedence when both addons are installed.
-- 31 headless tests pass, including a LayerSwap-only Mojow Joejoe report, filtering, request encoding and matched acceptance. Actual live presence/transfer remains unverified.
+- Accept guild invites is enabled by default: verified current guildmates' invitations can be accepted without a prior click, including during combat. Toggle is available in the panel.
+- Combat no longer blocks our hosting or LayerSwap request attempts; server and remote-addon restrictions still apply.
+- Configurable Horde radius (5–100 yards, default 40). Enter a value and press Enter; enable Auto Horde escape to use it.
+- No automatic departure from an existing party. Non-guild invitations remain excluded.
+- 32 headless tests pass, including combat-time invite/accept attempts and configured-distance boundaries. Live behavior still needs verification.
 - Reload the UI after updating.

@@ -35,6 +35,16 @@ function GuildLayersParty(api)
     elseif kind=="NO" then P.pending=nil; api.status("Cannot join: "..detail) end
   end
   function P.invitation(sender)
+    if not api.member(sender) then return end
+    if api.autoAcceptGuild and api.autoAcceptGuild() then
+      if api.grouped() then api.status("Guild invitation received, but you are already grouped."); return end
+      local existing=P.pending
+      if existing and existing.accepted and api.key(existing.name)==api.key(sender) and api.now()<=existing.untilAt then return end
+      P.pending={name=sender,untilAt=api.now()+20,accepted=true}
+      if api.accept() then api.status("Guild invitation: accept requested; waiting for party confirmation.")
+      else P.pending=nil; api.status("Game blocked acceptance; accept the guild invitation manually.") end
+      return
+    end
     local p=P.pending
     if not p or p.accepted or api.now()>p.untilAt or not api.member(sender) or
        api.key(sender)~=api.key(p.name) or api.grouped() then return end

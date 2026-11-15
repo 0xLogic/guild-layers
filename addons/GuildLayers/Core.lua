@@ -66,23 +66,23 @@ local function action(fn,...)
 end
 local function canHost()
   if not GuildLayersDB.hosting then return false,"Guild hosting is off" end
-  if InCombatLockdown() then return false,"Host is in combat" end
   if IsInRaid() then return false,"Host is in a raid" end
   if IsInGroup() and not UnitIsGroupLeader("player") then return false,"Host is not party leader" end
   if GetNumGroupMembers()>=5 then return false,"Party is full" end
   return true
 end
 local function hostileNear()
+  local radius=GuildLayersDB.hordeRadius or 40
   local units={"target","mouseover"}
   for i=1,40 do units[#units+1]="nameplate"..i end
   for _,u in ipairs(units) do
     local player,faction,attackable=UnitIsPlayer(u),UnitFactionGroup(u),UnitCanAttack("player",u)
     if public(player) and public(faction) and public(attackable) and player and faction=="Horde" and attackable then
       local ok,distance,checked=pcall(UnitDistanceSquared,u)
-      if ok and public(distance) and public(checked) and checked and type(distance)=="number" and distance>=0 and distance<=1600 then return true end
+      if ok and public(distance) and public(checked) and checked and type(distance)=="number" and distance>=0 and distance<=radius*radius then return true end
       -- Duel-interaction distance is about ten yards: a useful close-range
       -- fallback when the client withholds exact hostile-unit distance.
-      if type(CheckInteractDistance)=="function" then
+      if radius>=10 and type(CheckInteractDistance)=="function" then
         local nearOK,near=pcall(CheckInteractDistance,u,3)
         if nearOK and public(near) and near==true then return true end
       end
@@ -105,7 +105,7 @@ local function queryPresence()
   advertise()
 end
 local function requestStock(target,wanted)
-  if not layer or not mapID or IsInGroup() or InCombatLockdown() or (IsInInstance and IsInInstance()) then return false end
+  if not layer or not mapID or IsInGroup() or (IsInInstance and IsInInstance()) then return false end
   local route=wanted and ("want "..wanted) or ("not "..layer)
   local text="inv layer <LS "..tostring(mapID).." "..route..">"
   local ok,result=pcall(C_ChatInfo.SendAddonMessage,"LayerSwap",text,"WHISPER",target)
@@ -141,7 +141,11 @@ f:SetScript("OnEvent",function(_,event,...)
     GuildLayersDB=type(GuildLayersDB)=="table" and GuildLayersDB or {}
     if GuildLayersDB.hosting==nil then GuildLayersDB.hosting=true end
     if GuildLayersDB.addonOnly==nil then GuildLayersDB.addonOnly=true end
+    if GuildLayersDB.autoAcceptGuild==nil then GuildLayersDB.autoAcceptGuild=true end
+    local radius=tonumber(GuildLayersDB.hordeRadius)
+    GuildLayersDB.hordeRadius=radius and radius==radius and math.max(5,math.min(100,radius)) or 40
     party=GuildLayersParty({now=GetTime,key=key,member=member,grouped=IsInGroup,send=send,status=status,
+      autoAcceptGuild=function() return GuildLayersDB.autoAcceptGuild==true end,
       sendJoin=function(n,token)
         local p=peers[key(n)]
         if p and p.kind=="LayerSwap" and GetTime()-p.at<=90 then
@@ -179,6 +183,14 @@ f:SetScript("OnEvent",function(_,event,...)
       toggleFilter=function() GuildLayersDB.addonOnly=not GuildLayersDB.addonOnly; return GuildLayersDB.addonOnly end,
       autoEnabled=function() return GuildLayersDB.autoEscape==true end,
       toggleAuto=function() GuildLayersDB.autoEscape=not GuildLayersDB.autoEscape; return GuildLayersDB.autoEscape end,
+      radius=function() return GuildLayersDB.hordeRadius end,
+      acceptEnabled=function() return GuildLayersDB.autoAcceptGuild==true end,
+      toggleAccept=function() GuildLayersDB.autoAcceptGuild=not GuildLayersDB.autoAcceptGuild; return GuildLayersDB.autoAcceptGuild end,
+      setRadius=function(value)
+        local n=tonumber(value)
+        if not n or n~=n or n<5 or n>100 then return false end
+        GuildLayersDB.hordeRadius=n; return true
+      end,
       toggleHosting=function() GuildLayersDB.hosting=not GuildLayersDB.hosting; return GuildLayersDB.hosting end,
       hosting=function() return GuildLayersDB.hosting end})
     GuildLayers=ui

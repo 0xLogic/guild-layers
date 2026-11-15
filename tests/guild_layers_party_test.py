@@ -52,6 +52,13 @@ class PartyTests(unittest.TestCase):
   self.runlua('''api.send=function() return false end
    p.request("Alice"); assert(not p.pending)
    p.invitation("Alice"); assert(accepted==0)''')
+ def test_autoaccept_all_verified_guildmates_without_click(self):
+  self.runlua('''api.autoAcceptGuild=function() return true end
+   p.invitation("Stranger"); assert(accepted==0)
+   p.invitation("Alice"); assert(accepted==1 and p.pending.accepted)
+   p.invitation("Alice"); assert(accepted==1)
+   membership=false; p.invitation("Bob"); assert(accepted==1)
+   membership=true; grouped=true; p.invitation("Bob"); assert(accepted==1)''')
  def test_two_endpoint_exchange(self):
   self.runlua('''host=GuildLayersParty(api)
    p.request("Alice"); host.receive(messages[1][2],"Bob")
@@ -66,13 +73,13 @@ class PartyTests(unittest.TestCase):
     if u=="mouseover" then return "Creature-0-7000-1-2-11-BBB" end
    end
    C_Map={GetBestMapForUnit=function() return 1446 end,GetMapInfo=function() return {name="Tanaris"} end}
-   function InCombatLockdown() return false end
+   combat=true; function InCombatLockdown() return combat end
    function IsInRaid() return false end
    function UnitIsGroupLeader() return true end
    function GetNumGroupMembers() return 0 end
    function UnitIsDeadOrGhost() return false end
    accepts=0; function AcceptGroup() accepts=accepts+1 end
-   function InviteUnit() end
+   invites=0; function InviteUnit() invites=invites+1 end
    local create=CreateFrame
    CreateFrame=function(...) local f=create(...); if not coreFrame then coreFrame=f end; return f end''')
   for path in ('LayerSwapGuild/GuildMembers.lua','GuildLayers/Version.lua','GuildLayers/Party.lua','GuildLayers/Escape.lua','GuildLayers/Core.lua'):
@@ -104,8 +111,11 @@ class PartyTests(unittest.TestCase):
    clock=191; assert(#GuildLayers.rows()==0)
    GuildLayersDB.addonOnly=false; assert(#GuildLayers.rows()==3)
    GuildLayers.ask("Alice")
-   coreFrame.scripts.OnEvent(coreFrame,"PARTY_INVITE_REQUEST","Bob"); assert(accepts==0)
-   coreFrame.scripts.OnEvent(coreFrame,"PARTY_INVITE_REQUEST","Alice"); assert(accepts==1)
+   coreFrame.scripts.OnEvent(coreFrame,"PARTY_INVITE_REQUEST","Stranger"); assert(accepts==0)
+   coreFrame.scripts.OnEvent(coreFrame,"PARTY_INVITE_REQUEST","Bob"); assert(accepts==1)
+   coreFrame.scripts.OnEvent(coreFrame,"PARTY_INVITE_REQUEST","Alice"); assert(accepts==2)
+   coreFrame.scripts.OnEvent(coreFrame,"CHAT_MSG_ADDON","GuildLayers1","JOIN|999-1","WHISPER","Bob")
+   assert(invites==1)
    clock=220; ticker()
    coreFrame.scripts.OnEvent(coreFrame,"CHAT_MSG_ADDON","GuildLayers1","CAP|1","GUILD","Alice")
    GuildLayers.receive("LSGuild1","L|8000-2|Tanaris","GUILD","Alice")
@@ -120,7 +130,8 @@ class PartyTests(unittest.TestCase):
    GuildLayersDB.autoEscape=true
    ticker(); assert(joins==0)
    checked=true; distance=2000; ticker(); assert(joins==0)
-   distance=100; ticker(); assert(joins==1)
+   GuildLayersDB.hordeRadius=5; distance=100; ticker(); assert(joins==0)
+   GuildLayersDB.hordeRadius=10; ticker(); assert(joins==1)
    ticker(); assert(joins==1)
    GuildLayersDB.autoEscape=false; GuildLayersDB.addonOnly=true
    clock=350; ticker()
@@ -139,6 +150,6 @@ class PartyTests(unittest.TestCase):
    end
    GuildLayers.ask("Mojow Joejoe"); assert(stockRequests==1)
    coreFrame.scripts.OnEvent(coreFrame,"PARTY_INVITE_REQUEST","Mojow Joejoe-Realm")
-   assert(accepts==2)''')
+   assert(accepts==3)''')
 
 if __name__=='__main__': unittest.main()

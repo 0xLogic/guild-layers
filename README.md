@@ -1,4 +1,4 @@
-# Guild Layers 1.4.0 — WoW Forever
+# Guild Layers 1.5.0 — WoW Forever
 
 Install the GuildLayers folder in Interface/AddOns on both players, enable it,
 then open `/guildlayers` (also `/lsguild`). LayerSwap is not required. This package
@@ -15,9 +15,10 @@ reply still establishes that LayerSwap is running.
 While the panel is open, bounded direct LayerSwap requests discover missing peers
 (two candidates per five seconds, at most once per member per two minutes). These
 are real swap requests, not read-only presence queries: hosts may invite you.
-Discovery does not auto-accept invitations. Clicking a verified LayerSwap member
-uses the standard LayerSwap request and arms acceptance only for that member's
-matching invitation. Their hosting switch, zone checks and server rules still apply.
+With **Accept guild invites** enabled, invitations from verified guildmates are
+accepted automatically, including invitations provoked by discovery. Clicking a
+verified LayerSwap member uses the standard LayerSwap request. Their hosting
+switch, zone checks and server rules still apply.
 Known fresh Guild Layers capability takes precedence when both addons are installed.
 LayerSwap users do not need this addon to report layers or answer requests.
 
@@ -64,8 +65,8 @@ send attempts/results and received reports. Both clients should update for the
 new query/reply handshake; older clients only broadcast periodically.
 
 **Auto Horde escape**, disabled by default, checks once a second for a visible,
-attackable Horde player with a public, checked distance of 40 yards or less. It
-chooses an available Guild Layers host with a fresh different-layer report in the
+attackable Horde player within your saved **Horde radius**, default 40 yards. Enter
+5–100 yards and press Enter to save. It chooses an available compatible host with a fresh different-layer report in the
 same zone. No candidate, unknown/secret distance or faction, being dead, an instance,
 or an existing party/request prevents a new attempt. Attempts are spaced 60 seconds
 apart, with a two-minute per-host retry delay. It never leaves an existing party.
@@ -73,20 +74,24 @@ Successful joining is not reported as a layer switch until a different matching
 layer is actually observed. The server may block transfers during combat.
 
 When exact distance is unavailable, a successful close-range duel-interaction
-distance check also qualifies. If both checks are unavailable, the mode cannot
+distance check also qualifies when the configured radius is at least ten yards.
+If both checks are unavailable, the mode cannot
 detect that player. Detection and transfer remain LIVE TEST PENDING, not a proven
 escape guarantee. Enemy nameplates must be visible for nameplate detection.
 
 Click an online guildmate: their addon verifies current guild membership and
-attempts an invite. Your addon accepts only an invitation from that clicked member
-within 20 seconds. Party membership is confirmed from the party roster. No arbitrary
-incoming invitations are automatically accepted. Hosting is enabled by default;
+attempts an invite. **Accept guild invites** is enabled by default: every invitation
+from a verified current online guildmate is eligible, without a prior click and
+even during combat. Non-guild invitations are never automatically accepted. If
+you turn this off, only invitations matching a request made in the last 20 seconds
+are accepted. Party membership is confirmed from the roster. Hosting is enabled by default;
 **Guild hosting** toggles it and persists the preference. Leaving the guild revokes
 eligibility on the next action. No external website, credentials, or service is used.
 
 Joining across zones is allowed by this addon. It cannot force a cross-zone layer
 transfer, bypass server restrictions, invite from a full party/raid, or replace a
-current party. Host combat and lack of party leadership block automated hosting.
+current party. Combat no longer blocks the addon's own invite/accept attempts.
+Lack of party leadership still blocks hosting.
 If the game protects invite/accept APIs, manual interaction may still be required.
 An API call without an error is an attempt, not proof of a completed join.
 
