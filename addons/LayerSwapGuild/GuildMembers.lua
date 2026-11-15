@@ -185,7 +185,7 @@ function LayerSwapGuildMembers(api)
   end
   local f=CreateFrame("Frame","LayerSwapGuildPanel",UIParent)
   G.frame=f
-  f:SetSize(api.inspect and 916 or api.goldSummary and 820 or 640,api.goldSummary and 550 or 520); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
+  f:SetSize(api.armory and 1000 or api.inspect and 916 or api.goldSummary and 820 or 640,api.goldSummary and 550 or 520); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
   f:SetMovable(true); f:EnableMouse(true); f:RegisterForDrag("LeftButton")
   f:SetScript("OnDragStart",f.StartMoving); f:SetScript("OnDragStop",f.StopMovingOrSizing)
   local bg=f:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(.04,.05,.07,.95)
@@ -271,7 +271,7 @@ function LayerSwapGuildMembers(api)
   local buttons={}
   for i=1,PAGE do
     local b=CreateFrame("Button",nil,f)
-    b:SetSize(api.inspect and 884 or api.goldSummary and 788 or 608,26); b:SetPoint("TOPLEFT",16,-166-(i-1)*28)
+    b:SetSize(api.armory and 968 or api.inspect and 884 or api.goldSummary and 788 or 608,26); b:SetPoint("TOPLEFT",16,-166-(i-1)*28)
     local fill=b:CreateTexture(nil,"BACKGROUND"); fill:SetAllPoints()
     local shade=i%2==0 and .075 or .095
     fill:SetColorTexture(shade,shade+.018,shade+.03,.92)
@@ -283,6 +283,7 @@ function LayerSwapGuildMembers(api)
     if api.inspect then
       b.inspectButton=flatButton(b,"Inspect",798,-1,78,24,function() notice(api.inspect(b.member)) end)
     end
+    if api.armory then flatButton(b,"Armory",882,-1,78,24,function() notice(api.armory(b.member)) end) end
     buttons[i]=b
   end
   local mini=CreateFrame("Frame","GuildLayersMini",UIParent)

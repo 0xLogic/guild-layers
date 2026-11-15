@@ -226,7 +226,7 @@ f:SetScript("OnEvent",function(_,event,...)
       same=function(a,b) return a:match("^%d+")==b:match("^%d+") end,
       rescan=scan,name=function() return name("player") end,normalize=function(n) return n:match("^([^%-]+)") or n end,
       zoneName=zoneName,book=function() end,canProbe=function() return false,"Use Guild Layers on both players." end,
-      inspect=GuildLayersInspect,
+      inspect=GuildLayersInspect,armory=GuildLayersArmory,
       openGold=function() gold.toggle() end,
       goldSummary=gold.summary,goldFormat=gold.moneyText,
       guildRequest=party.request,
@@ -284,6 +284,7 @@ f:SetScript("OnEvent",function(_,event,...)
         GuildLayersDB.shareLocation=not GuildLayersDB.shareLocation
         print("Guild Layers: location sharing "..(GuildLayersDB.shareLocation and "on" or "off"))
       elseif msg=="raid" then raidTargets.toggle()
+      elseif msg:match("^armory%s+(.+)$") then status(GuildLayersArmory(msg:match("^armory%s+(.+)$")))
       elseif msg=="gold" then gold.toggle()
       elseif msg=="ping" then raidTargets.ping()
       elseif msg=="status" then

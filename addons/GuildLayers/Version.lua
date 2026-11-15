@@ -1,4 +1,4 @@
-GuildLayersVersion="1.8.1"
+GuildLayersVersion="1.9.0"
 function GuildLayersNewerVersion(candidate,current)
   local function parse(v)
     if type(v)~="string" or #v>11 then return nil end

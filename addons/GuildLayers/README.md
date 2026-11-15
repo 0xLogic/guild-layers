@@ -1,4 +1,4 @@
-# Guild Layers 1.8.1 — WoW Forever
+# Guild Layers 1.9.0 — WoW Forever
 
 Install the GuildLayers folder in Interface/AddOns on both players, enable it,
 then open `/guildlayers` (also `/lsguild`). LayerSwap is not required. This package
@@ -168,3 +168,22 @@ is visible, approach the guildmate on the same layer (or target them) and retry.
 A remote/offline armory is not provided by the standard inspect API. A submitted
 request is not proof that the server returned equipment. Requests are paced at
 one per two seconds. The client controls the equipment/talent tabs it exposes.
+
+## Cached armory (1.9)
+Armory beside Inspect opens a character-style equipment/statistics snapshot.
+You can also use /guildlayers armory Qouchi Liquor to open a cached profile by name.
+Inspect remains the live nearby-player action. Remote 3D appearances are not
+fabricated; a matching locally targeted player can provide the model. Gear icons
+use the client's item cache and may be unavailable until item metadata is loaded.
+Hover gear for the recorded name and bonuses. Source timestamps and missing/stale
+sections are shown separately. Public data may lag the character in game.
+
+Standalone addons cannot perform HTTPS requests. Run the included Python tool:
+`python guild_layers_armory_sync.py qouchi-liquor lost-thewar --output <AddOns>/GuildLayers/ArmoryData.lua`
+Then reload UI. Use `--local` only on the website host to use its existing loopback
+service on 8787. The default public osrs.services endpoint currently returned 403
+in our verification; loopback fetching succeeded. No credentials are embedded.
+This is an explicit snapshot sync, not live web requests from the Inspect button.
+The selected character set replaces the cache atomically after validation; supply
+all desired character slugs each time. Addon updates may replace the cache stub:
+run sync again after updating. Private generated snapshots are not published.
