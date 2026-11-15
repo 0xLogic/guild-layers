@@ -185,7 +185,7 @@ function LayerSwapGuildMembers(api)
   end
   local f=CreateFrame("Frame","LayerSwapGuildPanel",UIParent)
   G.frame=f
-  f:SetSize(api.goldSummary and 820 or 640,api.goldSummary and 550 or 520); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
+  f:SetSize(api.inspect and 916 or api.goldSummary and 820 or 640,api.goldSummary and 550 or 520); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
   f:SetMovable(true); f:EnableMouse(true); f:RegisterForDrag("LeftButton")
   f:SetScript("OnDragStart",f.StartMoving); f:SetScript("OnDragStop",f.StopMovingOrSizing)
   local bg=f:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(.04,.05,.07,.95)
@@ -250,6 +250,7 @@ function LayerSwapGuildMembers(api)
   textAt(f,366,-145,75,"LAYER")
   textAt(f,446,-145,45,"ADDON")
   textAt(f,508,-145,100,"STATUS")
+  if api.inspect then textAt(f,814,-145,86,"INSPECT") end
   local goldTotal
   if api.goldSummary then
     textAt(f,630,-145,170,"REPORTED GOLD")
@@ -270,7 +271,7 @@ function LayerSwapGuildMembers(api)
   local buttons={}
   for i=1,PAGE do
     local b=CreateFrame("Button",nil,f)
-    b:SetSize(api.goldSummary and 788 or 608,26); b:SetPoint("TOPLEFT",16,-166-(i-1)*28)
+    b:SetSize(api.inspect and 884 or api.goldSummary and 788 or 608,26); b:SetPoint("TOPLEFT",16,-166-(i-1)*28)
     local fill=b:CreateTexture(nil,"BACKGROUND"); fill:SetAllPoints()
     local shade=i%2==0 and .075 or .095
     fill:SetColorTexture(shade,shade+.018,shade+.03,.92)
@@ -279,6 +280,9 @@ function LayerSwapGuildMembers(api)
     b.columns={textAt(b,10,-7,190),textAt(b,210,-7,130),textAt(b,350,-7,75),textAt(b,430,-7,50),textAt(b,492,-7,106)}
     if api.goldSummary then b.columns[6]=textAt(b,614,-7,170) end
     b:SetScript("OnClick",function(self) notice(G.ask(self.member)); G.render() end)
+    if api.inspect then
+      b.inspectButton=flatButton(b,"Inspect",798,-1,78,24,function() notice(api.inspect(b.member)) end)
+    end
     buttons[i]=b
   end
   local mini=CreateFrame("Frame","GuildLayersMini",UIParent)
@@ -361,7 +365,7 @@ function LayerSwapGuildMembers(api)
     G.stockEnabled=not G.stockEnabled
     G.stockTick(); G.render()
   end)
-  button("Close",api.goldSummary and 674 or 494,function() f:Hide() end)
+  button("Close",api.inspect and 770 or api.goldSummary and 674 or 494,function() f:Hide() end)
   f:Hide()
   f:SetScript("OnShow",function() G.poll(); G.roster(); G.stockTick(); G.render() end)
   f:RegisterEvent("GUILD_ROSTER_UPDATE"); f:RegisterEvent("CHAT_MSG_ADDON")

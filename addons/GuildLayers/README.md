@@ -1,4 +1,4 @@
-# Guild Layers 1.8.0 — WoW Forever
+# Guild Layers 1.8.1 — WoW Forever
 
 Install the GuildLayers folder in Interface/AddOns on both players, enable it,
 then open `/guildlayers` (also `/lsguild`). LayerSwap is not required. This package
@@ -158,3 +158,13 @@ auction proceeds and item value are excluded. Received balances are memory-only
 and clear on reload or guild change. No individual gold-sharing preference is saved.
 Other members must install this version to contribute; disabling or removing the
 addon stops its reporting. No addon can force reports from an absent client.
+
+## Inspect (1.8.1)
+Use Inspect at the right edge of a guild roster row to request the normal in-game
+inspect window. The addon resolves the exact guildmate among target/focus/mouseover,
+party, raid and nameplate units, then checks client eligibility and inspect range.
+It does not change your target, join a party or switch layers. If no usable unit
+is visible, approach the guildmate on the same layer (or target them) and retry.
+A remote/offline armory is not provided by the standard inspect API. A submitted
+request is not proof that the server returned equipment. Requests are paced at
+one per two seconds. The client controls the equipment/talent tabs it exposes.

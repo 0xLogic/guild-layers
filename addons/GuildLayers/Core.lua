@@ -26,6 +26,35 @@ local function member(n)
   end
   return false
 end
+local lastInspect=-100
+function GuildLayersInspect(who)
+  if not member(who) then return "That guildmate is no longer online in your roster." end
+  if type(CanInspect)~="function" or type(InspectUnit)~="function" or type(CheckInteractDistance)~="function" then
+    return "Inspect is unavailable in this client."
+  end
+  if GetTime()-lastInspect<2 then return "Please wait a moment before inspecting again." end
+  local units={"target","focus","mouseover"}
+  for i=1,4 do units[#units+1]="party"..i end
+  for i=1,40 do units[#units+1]="raid"..i;units[#units+1]="nameplate"..i end
+  local found=false
+  for _,unit in ipairs(units) do
+    local player=UnitIsPlayer(unit)
+    if public(player) and player and key(name(unit))==key(who) then
+      found=true
+      local ok,allowed=pcall(CanInspect,unit)
+      local nearOK,near=pcall(CheckInteractDistance,unit,1)
+      if ok and public(allowed) and allowed and nearOK and public(near) and near then
+        -- Recheck the unit token after capability calls; never inspect a replacement target.
+        if key(name(unit))~=key(who) then return "Player changed; click Inspect again." end
+        lastInspect=GetTime()
+        local opened=pcall(InspectUnit,unit)
+        return opened and ("Inspection requested for "..who..".") or "The client could not open Inspect."
+      end
+    end
+  end
+  return found and "Move closer to that guildmate; inspection is unavailable at this range or state." or
+    "Guildmate is not visible. Move near them on the same layer, or target them, then click Inspect."
+end
 local function scan()
   local m=C_Map and C_Map.GetBestMapForUnit("player")
   if not public(m) then m=nil end
@@ -197,6 +226,7 @@ f:SetScript("OnEvent",function(_,event,...)
       same=function(a,b) return a:match("^%d+")==b:match("^%d+") end,
       rescan=scan,name=function() return name("player") end,normalize=function(n) return n:match("^([^%-]+)") or n end,
       zoneName=zoneName,book=function() end,canProbe=function() return false,"Use Guild Layers on both players." end,
+      inspect=GuildLayersInspect,
       openGold=function() gold.toggle() end,
       goldSummary=gold.summary,goldFormat=gold.moneyText,
       guildRequest=party.request,
