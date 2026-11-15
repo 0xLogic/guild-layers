@@ -1,8 +1,12 @@
 local PREFIX="GuildLayers1"
 local layer,mapID,samples,sampleAt=nil,nil,{},0
 local ui,party,escape
-local peers,lastAdvert={},-100
+local peers={}
 local notifiedVersion
+local lastPresenceQuery=-100
+local presenceReplies={}
+local presenceStats={received=0,sent=0,lastResult="not sent"}
+local presenceAsked={}
 local function public(v) return not issecretvalue or not issecretvalue(v) end
 local function key(n)
   if not public(n) or type(n)~="string" then return "" end
@@ -85,6 +89,36 @@ local function hostileNear()
   end
   return false
 end
+local function advertise(target)
+  if not IsInGuild() then return end
+  local channel=target and "WHISPER" or "GUILD"
+  local ok,result=pcall(C_ChatInfo.SendAddonMessage,PREFIX,canHost() and "CAP|1" or "CAP|0",channel,target)
+  presenceStats.lastResult=ok and public(result) and tostring(result) or "error/restricted"
+  presenceStats.sent=presenceStats.sent+1
+  pcall(C_ChatInfo.SendAddonMessage,PREFIX,"VER|"..GuildLayersVersion,channel,target)
+end
+local function queryPresence()
+  if not IsInGuild() or GetTime()-lastPresenceQuery<15 then return end
+  lastPresenceQuery=GetTime()
+  pcall(C_ChatInfo.SendAddonMessage,PREFIX,"PING|1","GUILD")
+  advertise()
+end
+local function presenceSweep()
+  if not ui or not ui.frame:IsShown() or not IsInGuild() then return end
+  ui.roster()
+  local names={}
+  for k,m in pairs(ui.members) do
+    local p=peers[k]
+    if (not p or GetTime()-p.at>60) and (not presenceAsked[k] or GetTime()-presenceAsked[k]>=60) then
+      names[#names+1]=m.name
+    end
+  end
+  table.sort(names)
+  for i=1,math.min(2,#names) do
+    local n=names[i]; presenceAsked[key(n)]=GetTime()
+    pcall(C_ChatInfo.SendAddonMessage,PREFIX,"PING|1","WHISPER",n)
+  end
+end
 local f=CreateFrame("Frame")
 f:RegisterEvent("PLAYER_LOGIN")
 f:SetScript("OnEvent",function(_,event,...)
@@ -106,6 +140,7 @@ f:SetScript("OnEvent",function(_,event,...)
       rescan=scan,name=function() return name("player") end,normalize=function(n) return n:match("^([^%-]+)") or n end,
       zoneName=zoneName,book=function() end,canProbe=function() return false,"Use Guild Layers on both players." end,
       guildRequest=party.request,
+      discoverPresence=queryPresence,
       installed=function(n) local p=peers[key(n)]; return p~=nil and GetTime()-p.at<=90 end,
       filterEnabled=function() return GuildLayersDB.addonOnly end,
       toggleFilter=function() GuildLayersDB.addonOnly=not GuildLayersDB.addonOnly; return GuildLayersDB.addonOnly end,
@@ -131,28 +166,40 @@ f:SetScript("OnEvent",function(_,event,...)
       request=function(n) party.request(n); return party.pending~=nil and key(party.pending.name)==key(n) end})
     pcall(C_ChatInfo.RegisterAddonMessagePrefix,PREFIX)
     for _,e in ipairs({"CHAT_MSG_ADDON","PARTY_INVITE_REQUEST","GROUP_ROSTER_UPDATE","ZONE_CHANGED_NEW_AREA","SHARD_TRANSFER"}) do pcall(f.RegisterEvent,f,e) end
-    SLASH_GUILDLAYERS1="/guildlayers"; SlashCmdList.GUILDLAYERS=SlashCmdList.LAYERSWAPGUILD
+    SLASH_GUILDLAYERS1="/guildlayers"
+    SlashCmdList.GUILDLAYERS=function(msg)
+      if msg=="status" then
+        print("Guild Layers "..GuildLayersVersion..": presence attempts="..presenceStats.sent..
+          ", received="..presenceStats.received..", last send result="..presenceStats.lastResult.." (0=accepted)")
+      else SlashCmdList.LAYERSWAPGUILD(msg) end
+    end
+    queryPresence()
+    -- Presence must not depend on layer scanning, combat or escape callbacks.
+    C_Timer.NewTicker(30,function() advertise() end)
+    C_Timer.NewTicker(5,presenceSweep)
     C_Timer.NewTicker(1,function()
       scan(); party.tick(); escape.tick()
-      if IsInGuild() and GetTime()-lastAdvert>=30 then
-        lastAdvert=GetTime()
-        pcall(C_ChatInfo.SendAddonMessage,PREFIX,canHost() and "CAP|1" or "CAP|0","GUILD")
-        pcall(C_ChatInfo.SendAddonMessage,PREFIX,"VER|"..GuildLayersVersion,"GUILD")
-      end
     end)
   elseif event=="CHAT_MSG_ADDON" then
     local prefix,text,channel,sender=...
     if public(prefix) and public(channel) and public(text) and public(sender) and prefix==PREFIX then
-      if channel=="WHISPER" then party.receive(text,sender)
-      elseif channel=="GUILD" and member(sender) and (text=="CAP|1" or text=="CAP|0") then
+      if (channel=="GUILD" or channel=="WHISPER") and member(sender) and text=="PING|1" then
+        local k=key(sender)
+        if k~=key(name("player")) and (not presenceReplies[k] or GetTime()-presenceReplies[k]>=15) then
+          presenceReplies[k]=GetTime(); advertise(sender)
+        end
+      elseif (channel=="GUILD" or channel=="WHISPER") and member(sender) and (text=="CAP|1" or text=="CAP|0") then
+        presenceStats.received=presenceStats.received+1
         peers[key(sender)]={ready=text=="CAP|1",at=GetTime()}
-      elseif channel=="GUILD" and member(sender) and type(text)=="string" then
+        if ui.frame:IsShown() then ui.render() end
+      elseif (channel=="GUILD" or channel=="WHISPER") and member(sender) and type(text)=="string" and text:match("^VER|") then
         local version=text:match("^VER|(.+)$")
         if GuildLayersNewerVersion(version,notifiedVersion or GuildLayersVersion) then
           notifiedVersion=version
           local line="Guildmate reports Guild Layers "..version.." (installed "..GuildLayersVersion.."). Updates: github.com/0xLogic/guild-layers/releases/latest"
           print(line); status(line)
         end
+      elseif channel=="WHISPER" then party.receive(text,sender)
       end
     end
   elseif event=="PARTY_INVITE_REQUEST" then

@@ -1,4 +1,4 @@
-# Guild Layers 1.2.0 — WoW Forever
+# Guild Layers 1.2.1 — WoW Forever
 
 Install the GuildLayers folder in Interface/AddOns on both players, enable it,
 then open `/guildlayers` (also `/lsguild`). LayerSwap is not required. This package
@@ -30,6 +30,13 @@ The addon itself cannot fetch GitHub or replace its own files.
 capability advertisement was received in the last 90 seconds. Hosting-off members
 still appear. Advertisements refresh every 30 seconds; a newly opened client may
 need to wait for the next one. This reports recent presence, not installed files.
+
+Version 1.2.1 actively requests presence on opening the panel and uses bounded
+direct addon-whisper queries as a fallback (two per five seconds, once per member
+per minute). Presence is independent of layer scans and combat callbacks. Both
+hosting-on and hosting-off replies count. `/guildlayers status` shows presence
+send attempts/results and received reports. Both clients should update for the
+new query/reply handshake; older clients only broadcast periodically.
 
 **Auto Horde escape**, disabled by default, checks once a second for a visible,
 attackable Horde player with a public, checked distance of 40 yards or less. It

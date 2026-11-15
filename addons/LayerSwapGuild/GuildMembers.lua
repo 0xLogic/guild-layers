@@ -45,6 +45,7 @@ function LayerSwapGuildMembers(api)
   function G.poll()
     if not IsInGuild() or (G.lastQuery and GetTime()-G.lastQuery<30) then return end
     G.lastQuery=GetTime()
+    if api.discoverPresence then api.discoverPresence() end
     if api.rescan then api.rescan() end
     if C_GuildInfo and C_GuildInfo.GuildRoster then C_GuildInfo.GuildRoster() elseif GuildRoster then GuildRoster() end
     G.roster()

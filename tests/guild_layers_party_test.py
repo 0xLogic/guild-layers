@@ -82,8 +82,27 @@ class PartyTests(unittest.TestCase):
    assert(#GuildLayers.rows()==0)
    coreFrame.scripts.OnEvent(coreFrame,"CHAT_MSG_ADDON","GuildLayers1","CAP|0","GUILD","Alice")
    assert(#GuildLayers.rows()==1 and GuildLayers.rows()[1].name=="Alice")
+   local previousRoster=GetGuildRosterInfo
+   function GetNumGuildMembers() return 3 end
+   function GetGuildRosterInfo(i)
+    if i==3 then return "Mojow Joejoe",nil,nil,40,"Druid","Tanaris",nil,nil,true end
+    return previousRoster(i)
+   end
+   GuildLayers.roster()
+   coreFrame.scripts.OnEvent(coreFrame,"CHAT_MSG_ADDON","GuildLayers1","CAP|0","WHISPER","Mojow Joejoe-Realm")
+   assert(#GuildLayers.rows()==2)
+   local oldSend=C_ChatInfo.SendAddonMessage
+   replies=0
+   C_ChatInfo.SendAddonMessage=function(prefix,text,channel,target)
+    if text:match("^CAP|") and target=="Mojow Joejoe-Realm" and channel=="WHISPER" then replies=replies+1 end
+    return 0
+   end
+   coreFrame.scripts.OnEvent(coreFrame,"CHAT_MSG_ADDON","GuildLayers1","PING|1","WHISPER","Mojow Joejoe-Realm")
+   coreFrame.scripts.OnEvent(coreFrame,"CHAT_MSG_ADDON","GuildLayers1","PING|1","WHISPER","Mojow Joejoe-Realm")
+   assert(replies==1)
+   C_ChatInfo.SendAddonMessage=oldSend
    clock=191; assert(#GuildLayers.rows()==0)
-   GuildLayersDB.addonOnly=false; assert(#GuildLayers.rows()==2)
+   GuildLayersDB.addonOnly=false; assert(#GuildLayers.rows()==3)
    GuildLayers.ask("Alice")
    coreFrame.scripts.OnEvent(coreFrame,"PARTY_INVITE_REQUEST","Bob"); assert(accepts==0)
    coreFrame.scripts.OnEvent(coreFrame,"PARTY_INVITE_REQUEST","Alice"); assert(accepts==1)
