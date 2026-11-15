@@ -1,8 +1,30 @@
-# Guild Layers 1.1.0 â€” WoW Forever
+# Guild Layers 1.2.0 — WoW Forever
 
 Install the GuildLayers folder in Interface/AddOns on both players, enable it,
 then open `/guildlayers` (also `/lsguild`). LayerSwap is not required. This package
 contains independently maintained guild UI and protocol code, not LayerSwap's source.
+
+## Updates
+
+Version 1.2.0 and newer announce their version to online guildmates. When a newer
+version is reported, chat and the panel show an update notice once per newer version
+per session. This is peer-reported, not an authoritative GitHub check; use the fixed
+project release page to verify. Old 1.1 clients need one manual update to gain notices.
+
+The release also supplies `guild_layers_update.py` (Python 3, no dependencies).
+Check GitHub independently of guild members:
+
+```text
+python guild_layers_update.py --addons-dir "D:/wforever/_forever_/Interface/AddOns"
+python guild_layers_update.py --addons-dir "D:/wforever/_forever_/Interface/AddOns" --install
+```
+
+The second command downloads the latest release, verifies the GitHub asset SHA256,
+validates ZIP paths/version, backs up replaced files, and installs them. Failed writes
+attempt restoration. Settings in WTF/SavedVariables are preserved. Run `/reload`
+after installation; the updater never restarts the game. It does not install itself
+as a background service. A user-managed scheduled invocation can check for updates.
+The addon itself cannot fetch GitHub or replace its own files.
 
 **Addon only**, enabled by default, filters to online members whose Guild Layers
 capability advertisement was received in the last 90 seconds. Hosting-off members
@@ -49,7 +71,3 @@ No claim of live success is made by the package.
 To remove: disable/delete GuildLayers. Saved settings may be retained. Local installer
 backs up and removes only our prior appended LayerSwap bridge/TOC entry so both UIs
 do not run simultaneously. It does not modify stock hosting policies or guild rules.
-
-## Development
-
-Install Python 3 and `pip install -r requirements-dev.txt`. Run `python -m unittest discover -s tests -p "*_test.py"`. Build the install ZIP with `python package.py`. Extract the GuildLayers directory into Interface/AddOns.

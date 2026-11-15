@@ -2,6 +2,7 @@ local PREFIX="GuildLayers1"
 local layer,mapID,samples,sampleAt=nil,nil,{},0
 local ui,party,escape
 local peers,lastAdvert={},-100
+local notifiedVersion
 local function public(v) return not issecretvalue or not issecretvalue(v) end
 local function key(n)
   if not public(n) or type(n)~="string" then return "" end
@@ -136,6 +137,7 @@ f:SetScript("OnEvent",function(_,event,...)
       if IsInGuild() and GetTime()-lastAdvert>=30 then
         lastAdvert=GetTime()
         pcall(C_ChatInfo.SendAddonMessage,PREFIX,canHost() and "CAP|1" or "CAP|0","GUILD")
+        pcall(C_ChatInfo.SendAddonMessage,PREFIX,"VER|"..GuildLayersVersion,"GUILD")
       end
     end)
   elseif event=="CHAT_MSG_ADDON" then
@@ -144,6 +146,13 @@ f:SetScript("OnEvent",function(_,event,...)
       if channel=="WHISPER" then party.receive(text,sender)
       elseif channel=="GUILD" and member(sender) and (text=="CAP|1" or text=="CAP|0") then
         peers[key(sender)]={ready=text=="CAP|1",at=GetTime()}
+      elseif channel=="GUILD" and member(sender) and type(text)=="string" then
+        local version=text:match("^VER|(.+)$")
+        if GuildLayersNewerVersion(version,notifiedVersion or GuildLayersVersion) then
+          notifiedVersion=version
+          local line="Guildmate reports Guild Layers "..version.." (installed "..GuildLayersVersion.."). Updates: github.com/0xLogic/guild-layers/releases/latest"
+          print(line); status(line)
+        end
       end
     end
   elseif event=="PARTY_INVITE_REQUEST" then

@@ -1,8 +1,7 @@
-Guild Layers 1.1.0
+Guild Layers 1.2.0
 
-- Standalone guild layer reports and one-click invite/accept workflow.
-- Addon-only roster filter (default on), based on recent capability reports.
-- Optional automatic Horde escape (default off), with range checks and cooldowns.
-- Both players need Guild Layers enabled. No website or LayerSwap required.
-- 23 headless tests passed. Real-client invite, hostile detection and transfer verification pending.
-- Server transfer rules still apply; existing groups are never automatically left.
+- In-game notices when guildmates report a newer version. Old 1.1 clients need one manual update to gain notices.
+- Separate Python updater checks GitHub; --install verifies SHA256 and ZIP paths, backs up replaced files and installs the latest release.
+- Existing joining, filtering and optional Horde escape retained.
+- 27 headless tests pass. Live invite/detection/transfer verification remains pending.
+- Reload the UI after updating. No game restart or background service is initiated.
