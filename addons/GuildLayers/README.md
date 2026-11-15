@@ -1,8 +1,16 @@
-# Guild Layers 1.2.1 — WoW Forever
+# Guild Layers 1.3.0 — WoW Forever
 
 Install the GuildLayers folder in Interface/AddOns on both players, enable it,
 then open `/guildlayers` (also `/lsguild`). LayerSwap is not required. This package
 contains independently maintained guild UI and protocol code, not LayerSwap's source.
+
+The header shows your current layer and the requested destination as **Layer A,
+Layer B, ...**. Letters are assigned on observation and remain stable per zone for
+this UI session; they are local aliases, not server-wide names or guaranteed matches
+to another player's LayerSwap letters. Equivalent Forever server IDs share a letter.
+After requesting, the header says Requested, Switch unconfirmed after 30 seconds,
+or Layer change observed only when your observed layer matches a different requested
+destination in the same zone. Joining a party alone does not confirm a layer change.
 
 ## Updates
 

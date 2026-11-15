@@ -59,6 +59,27 @@ class GuildTests(unittest.TestCase):
    g.receive("LSGuild1","L|200-1|Tanaris","GUILD","Alice")
    assert(g.rows()[1].state=="Ask to join")
    clock=221; assert(g.rows()[1].state=="Layer unknown")''')
+ def test_layer_letters_are_stable_and_zone_local(self):
+  self.check('''assert(g.layerLabel("100-1","Tanaris")=="Layer A")
+   assert(g.layerLabel("200-1","Tanaris")=="Layer B")
+   assert(g.layerLabel("100-99","Tanaris")=="Layer A")
+   assert(g.layerLabel("200-1","Elwynn")=="Layer A")
+   assert(g.layerLabel(nil,"Tanaris")=="Unknown")
+   for i=1,27 do g.layerLabel(tostring(i).."-1","Other") end
+   assert(g.layerLabel("27-1","Other")=="Layer AA")''')
+ def test_destination_does_not_claim_switch_from_request(self):
+  self.check('''g.receive("LSGuild1","L|200-1|Tanaris","GUILD","Alice")
+   g.rememberDestination("Alice")
+   assert(g.transitionText():find("You: Layer A",1,true))
+   assert(g.transitionText():find("Destination: Layer B",1,true))
+   assert(g.transitionText():find("Requested",1,true))
+   clock=131; assert(g.transitionText():find("unconfirmed",1,true))
+   api.current=function() return "200-99" end
+   assert(g.transitionText():find("Layer change observed",1,true))
+   assert(g.transitionText():find("You: Layer B",1,true))''')
+ def test_rejected_request_does_not_select_destination(self):
+  self.check('''api.guildRequest=function() return "Blocked",false end
+   g.ask("Alice"); assert(g.destination==nil)''')
  def test_same_layer_and_other_zone(self):
   self.check('''g.receive("LSGuild1","L|100-9|Tanaris","GUILD","Alice")
    assert(g.rows()[1].state=="Same layer")

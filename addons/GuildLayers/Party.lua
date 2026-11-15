@@ -10,7 +10,7 @@ function GuildLayersParty(api)
     P.pending={name=name,token=token,untilAt=api.now()+20}
     P.nextRequest=api.now()+5
     if not api.send(name,"JOIN|"..token) then P.pending=nil; return "Game refused the request." end
-    return "Requesting "..name.."; their Guild Layers addon must be enabled."
+    return "Requesting "..name.."; their Guild Layers addon must be enabled.",true
   end
   function P.receive(text,sender)
     if type(text)~="string" or #text>160 or not api.member(sender) then return end

@@ -163,7 +163,11 @@ f:SetScript("OnEvent",function(_,event,...)
         end
         return result
       end,
-      request=function(n) party.request(n); return party.pending~=nil and key(party.pending.name)==key(n) end})
+      request=function(n)
+        local _,accepted=party.request(n)
+        if accepted then ui.rememberDestination(n) end
+        return accepted==true
+      end})
     pcall(C_ChatInfo.RegisterAddonMessagePrefix,PREFIX)
     for _,e in ipairs({"CHAT_MSG_ADDON","PARTY_INVITE_REQUEST","GROUP_ROSTER_UPDATE","ZONE_CHANGED_NEW_AREA","SHARD_TRANSFER"}) do pcall(f.RegisterEvent,f,e) end
     SLASH_GUILDLAYERS1="/guildlayers"

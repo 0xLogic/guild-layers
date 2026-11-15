@@ -3,6 +3,42 @@ function LayerSwapGuildMembers(api)
   local G = { reports = {}, members = {}, page = 1, lastAsk = -100, lastSend = -100,
     stockEnabled=true, stockAsked={}, stockNext=0 }
   local PREFIX, TTL, PAGE = "LSGuild1", 120, 10
+  local labels={}
+  function G.layerLabel(id,zone)
+    if not id or not zone then return "Unknown" end
+    local list=labels[zone]
+    if not list then list={}; labels[zone]=list end
+    local index
+    for i,known in ipairs(list) do if api.same(id,known) then index=i; break end end
+    if not index then list[#list+1]=id; index=#list end
+    local letters=""
+    repeat
+      index=index-1; letters=string.char(65+index%26)..letters; index=math.floor(index/26)
+    until index==0
+    return "Layer "..letters
+  end
+  function G.rememberDestination(name)
+    G.layerLabel(api.current(),api.zone())
+    for _,r in ipairs(G.rows()) do
+      if r.name==name then
+        G.destination={name=name,layer=r.layer,zone=r.zone,from=api.current(),fromZone=api.zone(),at=GetTime()}
+        G.layerLabel(r.layer,r.zone)
+        return
+      end
+    end
+  end
+  function G.transitionText()
+    local here=G.layerLabel(api.current(),api.zone())
+    local d=G.destination
+    if not d then return "You: "..here.."  |  Destination: select a guildmate" end
+    local target=G.layerLabel(d.layer,d.zone)
+    local state="Requested"
+    if d.zone~=api.zone() then state="Different zone"
+    elseif d.layer and api.current() and api.same(d.layer,api.current()) then
+      state=d.from and d.fromZone==d.zone and not api.same(d.from,d.layer) and "Layer change observed" or "Same layer"
+    elseif GetTime()-d.at>30 then state="Switch unconfirmed" end
+    return "You: "..here.."  →  Destination: "..target.." · "..state
+  end
   if api.guildRequest then G.stockEnabled=false end
   local function key(name)
     if type(name)~="string" then return "" end
@@ -84,6 +120,7 @@ function LayerSwapGuildMembers(api)
     end
   end
   function G.rows()
+    G.layerLabel(api.current(),api.zone())
     local rows={}
     for k,m in pairs(G.members) do
       if not api.filterEnabled or not api.filterEnabled() or api.installed(m.name) then
@@ -111,7 +148,11 @@ function LayerSwapGuildMembers(api)
   end
   function G.ask(name)
     G.roster()
-    if api.guildRequest then return api.guildRequest(name) end
+    if api.guildRequest then
+      local message,accepted=api.guildRequest(name)
+      if accepted then G.rememberDestination(name) end
+      return message
+    end
     if IsInGroup() then return "Leave your group before requesting a switch." end
     local allowed,reason=api.canProbe()
     if not allowed then return reason end
@@ -124,6 +165,7 @@ function LayerSwapGuildMembers(api)
         local ok,result=pcall(api.probe,name,r.layer)
         if not ok or result~=0 then return "Request refused or throttled by the game. Try again shortly." end
         api.sent(name,r.layer)
+        G.rememberDestination(name)
         return "Invite requested from "..name..". Waiting for their response; hosting must allow it."
       end
     end
@@ -131,7 +173,7 @@ function LayerSwapGuildMembers(api)
   end
   local f=CreateFrame("Frame","LayerSwapGuildPanel",UIParent)
   G.frame=f
-  f:SetSize(490,410); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
+  f:SetSize(490,450); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
   f:SetMovable(true); f:EnableMouse(true); f:RegisterForDrag("LeftButton")
   f:SetScript("OnDragStart",f.StartMoving); f:SetScript("OnDragStop",f.StopMovingOrSizing)
   local bg=f:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(.04,.05,.07,.95)
@@ -159,7 +201,8 @@ function LayerSwapGuildMembers(api)
     filter:SetScript("OnClick",function(self) self:SetChecked(api.toggleFilter()); G.render() end)
   end
   subtitle:SetText(api.guildRequest and "Click to join · Guild Layers required" or "Click any guildmate to request an invite · hosts may invite you")
-  local status=label(-354); status:SetHeight(42)
+  local transition=label(-55); transition:SetHeight(34)
+  local status=label(-394); status:SetHeight(42)
   local function notice(text)
     G.noticeUntil=GetTime()+15; status:SetText(text)
   end
@@ -167,18 +210,19 @@ function LayerSwapGuildMembers(api)
   local buttons={}
   for i=1,PAGE do
     local b=CreateFrame("Button",nil,f,"UIPanelButtonTemplate")
-    b:SetSize(466,27); b:SetPoint("TOPLEFT",12,-54-(i-1)*29)
-    b:SetScript("OnClick",function(self) notice(G.ask(self.member)) end)
+    b:SetSize(466,27); b:SetPoint("TOPLEFT",12,-94-(i-1)*29)
+    b:SetScript("OnClick",function(self) notice(G.ask(self.member)); G.render() end)
     buttons[i]=b
   end
   function G.render()
     local rows=G.rows(); local pages=math.max(1,math.ceil(#rows/PAGE))
+    transition:SetText(G.transitionText())
     G.page=math.min(G.page,pages)
     for i,b in ipairs(buttons) do
       local r=rows[(G.page-1)*PAGE+i]
       if r then
         b.member=r.name
-        b:SetText(r.name.." · "..tostring(r.level or "?").." "..(r.class or "").." · "..(r.layer or "?").." · "..r.state)
+        b:SetText(r.name.." · "..tostring(r.level or "?").." "..(r.class or "").." · "..G.layerLabel(r.layer,r.zone).." · "..r.state)
         b:SetEnabled(true); b:Show()
       else b:Hide() end
     end
