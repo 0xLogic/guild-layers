@@ -1,8 +1,24 @@
-# Guild Layers 1.5.0 — WoW Forever
+# Guild Layers 1.6.0 — WoW Forever
 
 Install the GuildLayers folder in Interface/AddOns on both players, enable it,
 then open `/guildlayers` (also `/lsguild`). LayerSwap is not required. This package
 contains independently maintained guild UI and protocol code, not LayerSwap's source.
+
+## Roster and mini bar
+
+The roster uses aligned Member, Level/Class, Layer, Addon and Status columns with
+bounded single-line labels, alternating dark rows and compact controls. Click a row
+to request that guildmate. Main and mini panels can be dragged and stay on screen.
+
+A single-line mini bar appears at the top of the screen. **Force guild switch**
+selects a fresh, available host on another known layer in your current zone, using
+the normal request/accept path. It cannot force the server to transfer you. If no
+eligible host is known, it opens the roster and refreshes reports instead of claiming
+a switch. **Roster** toggles the main panel; `/guildlayersmini` hides/shows the mini
+bar. Hover the bar for the latest request status. Positions are session-local.
+
+UI code loads in headless tests and switch logic is tested; visual verification in the client is
+still pending. No screenshots or game restarts were performed during development.
 
 ## LayerSwap compatibility
 

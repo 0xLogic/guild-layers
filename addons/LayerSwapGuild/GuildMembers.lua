@@ -37,7 +37,7 @@ function LayerSwapGuildMembers(api)
     elseif d.layer and api.current() and api.same(d.layer,api.current()) then
       state=d.from and d.fromZone==d.zone and not api.same(d.from,d.layer) and "Layer change observed" or "Same layer"
     elseif GetTime()-d.at>30 then state="Switch unconfirmed" end
-    return "You: "..here.."  →  Destination: "..target.." · "..state
+    return "You: "..here.."  ->  Destination: "..target.." · "..state
   end
   if api.guildRequest then G.stockEnabled=false end
   local function key(name)
@@ -172,42 +172,53 @@ function LayerSwapGuildMembers(api)
     end
     return "That guildmate is no longer online."
   end
+  function G.forceSwitch()
+    G.roster()
+    for _,r in ipairs(G.rows()) do
+      if r.state=="Ask to join" and (not api.canSwitchPeer or api.canSwitchPeer(r.name)) then
+        return G.ask(r.name)
+      end
+    end
+    G.poll()
+    if G.frame then G.frame:Show() end
+    return "No available guildmate on another known layer in this zone. Refreshing reports."
+  end
   local f=CreateFrame("Frame","LayerSwapGuildPanel",UIParent)
   G.frame=f
-  local extra=api.setRadius and 24 or 0
-  f:SetSize(490,450+extra); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
+  f:SetSize(640,520); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
   f:SetMovable(true); f:EnableMouse(true); f:RegisterForDrag("LeftButton")
   f:SetScript("OnDragStart",f.StartMoving); f:SetScript("OnDragStop",f.StopMovingOrSizing)
   local bg=f:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(.04,.05,.07,.95)
   local function label(y)
     local t=f:CreateFontString(nil,"OVERLAY","GameFontNormalSmall")
-    t:SetPoint("TOPLEFT",12,y); t:SetWidth(466); t:SetJustifyH("LEFT"); return t
+    t:SetPoint("TOPLEFT",16,y); t:SetWidth(608); t:SetJustifyH("LEFT"); return t
   end
-  local title=label(-12); title:SetWidth(290); title:SetText("GUILD LAYERS · ONLINE MEMBERS")
+  local title=label(-16); title:SetWidth(300); title:SetText("GUILD LAYERS")
+  title:SetTextColor(.42,.84,.77)
   if api.toggleAuto then
     local auto=CreateFrame("CheckButton",nil,f,"UICheckButtonTemplate")
-    auto:SetSize(24,24); auto:SetPoint("TOPRIGHT",-142,-4)
+    auto:SetSize(24,24); auto:SetPoint("TOPLEFT",16,-82)
     auto:SetChecked(api.autoEnabled())
     local caption=auto:CreateFontString(nil,"OVERLAY","GameFontNormalSmall")
     caption:SetPoint("LEFT",auto,"RIGHT",2,0); caption:SetText("Auto Horde escape")
     auto:SetScript("OnClick",function(self) self:SetChecked(api.toggleAuto()) end)
   end
-  local subtitle=label(-34)
+  local subtitle=label(-37)
   if api.toggleFilter then
     subtitle:SetWidth(300)
     local filter=CreateFrame("CheckButton",nil,f,"UICheckButtonTemplate")
-    filter:SetSize(24,24); filter:SetPoint("TOPRIGHT",-142,-28)
+    filter:SetSize(24,24); filter:SetPoint("TOPRIGHT",-110,-12)
     filter:SetChecked(api.filterEnabled())
     local caption=filter:CreateFontString(nil,"OVERLAY","GameFontNormalSmall")
     caption:SetPoint("LEFT",filter,"RIGHT",2,0); caption:SetText("Addon only")
     filter:SetScript("OnClick",function(self) self:SetChecked(api.toggleFilter()); G.render() end)
   end
-  subtitle:SetText(api.guildRequest and "Click to join · GL / LS supported" or "Click any guildmate to request an invite · hosts may invite you")
-  local transition=label(-55); transition:SetHeight(34)
+  subtitle:SetText("Guild roster  /  LayerSwap compatible"); subtitle:SetTextColor(.60,.67,.73)
+  local transition=label(-59); transition:SetHeight(18); transition:SetTextColor(.85,.90,.94)
   if api.setRadius then
-    local caption=label(-91); caption:SetWidth(125); caption:SetText("Horde radius (yards)")
+    local caption=label(-111); caption:SetWidth(110); caption:SetText("Detection range")
     local input=CreateFrame("EditBox",nil,f,"InputBoxTemplate")
-    input:SetSize(55,22); input:SetPoint("TOPLEFT",150,-84)
+    input:SetSize(55,22); input:SetPoint("TOPLEFT",134,-106)
     input:SetAutoFocus(false); input:SetMaxLetters(5); input:SetText(tostring(api.radius()))
     input:SetScript("OnEnterPressed",function(self)
       local valid=api.setRadius(self:GetText())
@@ -217,34 +228,82 @@ function LayerSwapGuildMembers(api)
     input:SetScript("OnEscapePressed",function(self) self:SetText(tostring(api.radius())); self:ClearFocus() end)
     if api.toggleAccept then
       local accept=CreateFrame("CheckButton",nil,f,"UICheckButtonTemplate")
-      accept:SetSize(24,24); accept:SetPoint("TOPLEFT",225,-84); accept:SetChecked(api.acceptEnabled())
+      accept:SetSize(24,24); accept:SetPoint("TOPLEFT",238,-82); accept:SetChecked(api.acceptEnabled())
       local text=accept:CreateFontString(nil,"OVERLAY","GameFontNormalSmall")
       text:SetPoint("LEFT",accept,"RIGHT",2,0); text:SetText("Accept guild invites")
       accept:SetScript("OnClick",function(self) self:SetChecked(api.toggleAccept()) end)
     end
   end
-  local status=label(-394-extra); status:SetHeight(42)
+  local status=label(-452); status:SetHeight(28); status:SetTextColor(.65,.73,.79)
   local function notice(text)
-    G.noticeUntil=GetTime()+15; status:SetText(text)
+    G.noticeUntil=GetTime()+15; G.lastNotice=text; status:SetText(text)
   end
   G.setStatus=notice
+  local function textAt(parent,x,y,width,text)
+    local t=parent:CreateFontString(nil,"OVERLAY","GameFontNormalSmall")
+    t:SetPoint("TOPLEFT",x,y); t:SetWidth(width); t:SetJustifyH("LEFT")
+    t:SetWordWrap(false); t:SetText(text or ""); t:SetTextColor(.80,.85,.89)
+    return t
+  end
+  textAt(f,26,-145,190,"MEMBER")
+  textAt(f,226,-145,130,"LEVEL / CLASS")
+  textAt(f,366,-145,75,"LAYER")
+  textAt(f,446,-145,45,"ADDON")
+  textAt(f,508,-145,100,"STATUS")
+  local function flatButton(parent,text,x,y,width,height,callback)
+    local b=CreateFrame("Button",nil,parent)
+    b:SetSize(width,height); b:SetPoint("TOPLEFT",x,y)
+    local fill=b:CreateTexture(nil,"BACKGROUND"); fill:SetAllPoints(); fill:SetColorTexture(.10,.19,.23,.95)
+    local t=textAt(b,8,-7,width-16,text); b:SetFontString(t)
+    b:SetScript("OnEnter",function() fill:SetColorTexture(.14,.31,.34,1) end)
+    b:SetScript("OnLeave",function() fill:SetColorTexture(.10,.19,.23,.95) end)
+    b:SetScript("OnClick",callback)
+    return b
+  end
   local buttons={}
   for i=1,PAGE do
-    local b=CreateFrame("Button",nil,f,"UIPanelButtonTemplate")
-    b:SetSize(466,27); b:SetPoint("TOPLEFT",12,-94-extra-(i-1)*29)
+    local b=CreateFrame("Button",nil,f)
+    b:SetSize(608,26); b:SetPoint("TOPLEFT",16,-166-(i-1)*28)
+    local fill=b:CreateTexture(nil,"BACKGROUND"); fill:SetAllPoints()
+    local shade=i%2==0 and .075 or .095
+    fill:SetColorTexture(shade,shade+.018,shade+.03,.92)
+    b:SetScript("OnEnter",function() fill:SetColorTexture(.10,.23,.25,.95) end)
+    b:SetScript("OnLeave",function() fill:SetColorTexture(shade,shade+.018,shade+.03,.92) end)
+    b.columns={textAt(b,10,-7,190),textAt(b,210,-7,130),textAt(b,350,-7,75),textAt(b,430,-7,50),textAt(b,492,-7,106)}
     b:SetScript("OnClick",function(self) notice(G.ask(self.member)); G.render() end)
     buttons[i]=b
   end
+  local mini=CreateFrame("Frame","GuildLayersMini",UIParent)
+  G.mini=mini
+  mini:SetSize(640,32); mini:SetPoint("TOP",UIParent,"TOP",0,-12)
+  mini:SetClampedToScreen(true); mini:SetMovable(true); mini:EnableMouse(true)
+  mini:RegisterForDrag("LeftButton"); mini:SetScript("OnDragStart",mini.StartMoving)
+  mini:SetScript("OnDragStop",mini.StopMovingOrSizing)
+  local miniBG=mini:CreateTexture(nil,"BACKGROUND"); miniBG:SetAllPoints(); miniBG:SetColorTexture(.035,.055,.07,.93)
+  local miniText=textAt(mini,12,-10,328,"Guild Layers")
+  flatButton(mini,"Force guild switch",350,-3,178,26,function() notice(G.forceSwitch()); G.render() end)
+  flatButton(mini,"Roster",536,-3,96,26,function() f:SetShown(not f:IsShown()) end)
+  mini:SetScript("OnEnter",function()
+    if GameTooltip then GameTooltip:SetOwner(mini,"ANCHOR_BOTTOM"); GameTooltip:SetText(G.lastNotice or "Drag to move. Force guild switch requests an available different-layer guildmate.",1,1,1,true); GameTooltip:Show() end
+  end)
+  mini:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
+  mini:Show()
   function G.render()
     local rows=G.rows(); local pages=math.max(1,math.ceil(#rows/PAGE))
     transition:SetText(G.transitionText())
+    local d=G.destination
+    miniText:SetText("Guild Layers  |  "..G.layerLabel(api.current(),api.zone())..(d and (" -> "..G.layerLabel(d.layer,d.zone)) or ""))
     G.page=math.min(G.page,pages)
     for i,b in ipairs(buttons) do
       local r=rows[(G.page-1)*PAGE+i]
       if r then
         b.member=r.name
-        local addon=r.addon and (r.addon=="LayerSwap" and " [LS]" or " [GL]") or ""
-        b:SetText(r.name..addon.." · "..tostring(r.level or "?").." "..(r.class or "").." · "..G.layerLabel(r.layer,r.zone).." · "..r.state)
+        b.columns[1]:SetText(r.name)
+        b.columns[2]:SetText(tostring(r.level or "?").."  "..(r.class or ""))
+        b.columns[3]:SetText(G.layerLabel(r.layer,r.zone))
+        b.columns[4]:SetText(r.addon and (r.addon=="LayerSwap" and "LS" or "GL") or "-")
+        b.columns[5]:SetText(r.state=="Ask to join" and "Switch" or r.state)
+        b.columns[5]:SetTextColor(r.state=="Ask to join" and .40 or .65,r.state=="Ask to join" and .88 or .71,.74)
         b:SetEnabled(true); b:Show()
       else b:Hide() end
     end
@@ -253,18 +312,15 @@ function LayerSwapGuildMembers(api)
       for _,r in ipairs(rows) do if r.layer then known=known+1 end end
       if #rows==0 then status:SetText(api.filterEnabled and api.filterEnabled() and
         "No online guildmates with a recent Guild Layers or LayerSwap report yet." or "No other online guildmates in the current roster.")
-      else status:SetText(known.." / "..#rows.." layers reported. "..
-        (api.guildRequest and "Click a member to join. Layer transfer depends on zone and server rules." or
-         (not G.stockEnabled and "Automatic requests stopped." or G.stockStatus or "Discovering guild layers…"))) end
+      else status:SetText(known.." / "..#rows.." layers known   ·   Page "..G.page.." / "..pages.."   ·   Click a member to request an invite") end
     end
   end
   local function button(text,x,callback)
-    local b=CreateFrame("Button",nil,f,"UIPanelButtonTemplate")
-    b:SetSize(100,22); b:SetPoint("BOTTOMLEFT",x,6); b:SetText(text); b:SetScript("OnClick",callback)
+    return flatButton(f,text,x,-486,130,26,callback)
   end
-  button("Previous",12,function() G.page=math.max(1,G.page-1); G.render() end)
-  button("Next",122,function() G.page=G.page+1; G.render() end)
-  button(api.guildRequest and "Guild hosting" or "Start / Stop",232,function(self)
+  button("Previous",16,function() G.page=math.max(1,G.page-1); G.render() end)
+  button("Next",154,function() G.page=G.page+1; G.render() end)
+  button(api.guildRequest and "Guild hosting" or "Start / Stop",356,function(self)
     if api.toggleHosting then
       local enabled=api.toggleHosting()
       self:SetText(enabled and "Hosting: On" or "Hosting: Off")
@@ -274,7 +330,7 @@ function LayerSwapGuildMembers(api)
     G.stockEnabled=not G.stockEnabled
     G.stockTick(); G.render()
   end)
-  button("Close",378,function() f:Hide() end)
+  button("Close",494,function() f:Hide() end)
   f:Hide()
   f:SetScript("OnShow",function() G.poll(); G.roster(); G.stockTick(); G.render() end)
   f:RegisterEvent("GUILD_ROSTER_UPDATE"); f:RegisterEvent("CHAT_MSG_ADDON")
@@ -293,6 +349,8 @@ function LayerSwapGuildMembers(api)
   pcall(C_ChatInfo.RegisterAddonMessagePrefix,"LayerSwap")
   SLASH_LAYERSWAPGUILD1="/lsguild"
   SlashCmdList.LAYERSWAPGUILD=function() f:SetShown(not f:IsShown()) end
+  SLASH_GUILDLAYERSMINI1="/guildlayersmini"
+  SlashCmdList.GUILDLAYERSMINI=function() mini:SetShown(not mini:IsShown()) end
   C_Timer.NewTicker(5,function()
     G.send()
     if LayerSwapPanel and not G.openButton then
@@ -301,7 +359,8 @@ function LayerSwapGuildMembers(api)
       b:SetText("Guild layers"); b:SetScript("OnClick",SlashCmdList.LAYERSWAPGUILD)
       G.openButton=b
     end
-    if f:IsShown() then G.poll(); G.stockTick(); G.render() end
+    if f:IsShown() then G.poll(); G.stockTick() end
+    if f:IsShown() or mini:IsShown() then G.render() end
   end)
   G.roster()
   return G

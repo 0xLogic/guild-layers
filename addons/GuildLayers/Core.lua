@@ -178,6 +178,7 @@ f:SetScript("OnEvent",function(_,event,...)
         end
       end,
       addonKind=function(n) local p=peers[key(n)]; return p and GetTime()-p.at<=90 and p.kind or nil end,
+      canSwitchPeer=function(n) local p=peers[key(n)]; return p~=nil and p.ready and GetTime()-p.at<=90 end,
       installed=function(n) local p=peers[key(n)]; return p~=nil and GetTime()-p.at<=90 end,
       filterEnabled=function() return GuildLayersDB.addonOnly end,
       toggleFilter=function() GuildLayersDB.addonOnly=not GuildLayersDB.addonOnly; return GuildLayersDB.addonOnly end,

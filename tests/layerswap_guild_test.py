@@ -80,6 +80,17 @@ class GuildTests(unittest.TestCase):
  def test_rejected_request_does_not_select_destination(self):
   self.check('''api.guildRequest=function() return "Blocked",false end
    g.ask("Alice"); assert(g.destination==nil)''')
+ def test_force_switch_selects_available_other_layer(self):
+  self.check('''g.receive("LSGuild1","L|200-1|Tanaris","GUILD","Alice")
+   g.receive("LSGuild1","L|100-9|Tanaris","GUILD","Bob")
+   api.canSwitchPeer=function(n) return n=="Alice" end
+   g.forceSwitch(); assert(probes[1]=="Alice" and requestedLayer=="200-1")
+   assert(g.destination.name=="Alice")''')
+ def test_force_switch_does_not_claim_unknown_or_unavailable_layer(self):
+  self.check('''api.canSwitchPeer=function() return false end
+   g.receive("LSGuild1","L|200-1|Tanaris","GUILD","Alice")
+   g.forceSwitch(); assert(sent==0 and g.destination==nil)
+   assert(g.frame:IsShown())''')
  def test_same_layer_and_other_zone(self):
   self.check('''g.receive("LSGuild1","L|100-9|Tanaris","GUILD","Alice")
    assert(g.rows()[1].state=="Same layer")
