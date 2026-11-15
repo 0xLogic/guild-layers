@@ -1,6 +1,6 @@
 local PREFIX="GuildLayers1"
 local layer,mapID,samples,sampleAt=nil,nil,{},0
-local ui,party,escape,mapMarkers,raidTargets
+local ui,party,escape,mapMarkers,raidTargets,gold
 local peers={}
 local notifiedVersion
 local lastPresenceQuery=-100
@@ -147,6 +147,30 @@ f:SetScript("OnEvent",function(_,event,...)
     if GuildLayersDB.shareLocation==nil then GuildLayersDB.shareLocation=true end
     local mapAPI={member=member,key=key,now=GetTime,public=public,layer=function() return layer end}
     mapMarkers=GuildLayersMap(mapAPI);raidTargets=GuildLayersRaid(mapAPI)
+    GuildLayersDB.shareGold=nil -- Retire the earlier optional-sharing preference.
+    local goldAPI={member=member,key=key,now=GetTime,public=public,
+      name=function() return name("player") or "" end,
+      money=function() return GetMoney() end,
+      scope=function()
+        if not IsInGuild() or not GetGuildInfo then return nil end
+        local guild=GetGuildInfo("player")
+        if not public(guild) or type(guild)~="string" then return nil end
+        return guild
+      end,
+      send=function(text)
+        local ok,result=pcall(C_ChatInfo.SendAddonMessage,PREFIX,text,"GUILD")
+        return ok and public(result) and result==0
+      end,
+      roster=function()
+        local rows={}
+        for i=1,GetNumGuildMembers() do
+          local who,_,_,_,_,_,_,_,online=GetGuildRosterInfo(i)
+          if public(who) and public(online) and online and type(who)=="string" then rows[#rows+1]=who end
+        end
+        return rows
+      end}
+    gold=GuildLayersGold(goldAPI);GuildLayersGoldPanel(gold,goldAPI)
+    C_Timer.NewTicker(1,gold.tick)
     GuildLayersTargetPing=raidTargets.ping;GuildLayersRaidToggle=raidTargets.toggle
     C_Timer.NewTicker(5,mapMarkers.broadcast)
     C_Timer.NewTicker(1,function() mapMarkers.draw();raidTargets.tick() end)
@@ -173,6 +197,8 @@ f:SetScript("OnEvent",function(_,event,...)
       same=function(a,b) return a:match("^%d+")==b:match("^%d+") end,
       rescan=scan,name=function() return name("player") end,normalize=function(n) return n:match("^([^%-]+)") or n end,
       zoneName=zoneName,book=function() end,canProbe=function() return false,"Use Guild Layers on both players." end,
+      openGold=function() gold.toggle() end,
+      goldSummary=gold.summary,goldFormat=gold.moneyText,
       guildRequest=party.request,
       discoverPresence=queryPresence,
       observeStock=function(n,ready)
@@ -221,13 +247,14 @@ f:SetScript("OnEvent",function(_,event,...)
         return accepted==true
       end})
     pcall(C_ChatInfo.RegisterAddonMessagePrefix,PREFIX)
-    for _,e in ipairs({"CHAT_MSG_ADDON","PARTY_INVITE_REQUEST","GROUP_ROSTER_UPDATE","ZONE_CHANGED_NEW_AREA","SHARD_TRANSFER"}) do pcall(f.RegisterEvent,f,e) end
+    for _,e in ipairs({"CHAT_MSG_ADDON","PARTY_INVITE_REQUEST","GROUP_ROSTER_UPDATE","ZONE_CHANGED_NEW_AREA","SHARD_TRANSFER","PLAYER_MONEY","PLAYER_GUILD_UPDATE"}) do pcall(f.RegisterEvent,f,e) end
     SLASH_GUILDLAYERS1="/guildlayers"
     SlashCmdList.GUILDLAYERS=function(msg)
       if msg=="mapshare" then
         GuildLayersDB.shareLocation=not GuildLayersDB.shareLocation
         print("Guild Layers: location sharing "..(GuildLayersDB.shareLocation and "on" or "off"))
       elseif msg=="raid" then raidTargets.toggle()
+      elseif msg=="gold" then gold.toggle()
       elseif msg=="ping" then raidTargets.ping()
       elseif msg=="status" then
         print("Guild Layers "..GuildLayersVersion..": presence attempts="..presenceStats.sent..
@@ -244,7 +271,8 @@ f:SetScript("OnEvent",function(_,event,...)
   elseif event=="CHAT_MSG_ADDON" then
     local prefix,text,channel,sender=...
     if public(prefix) and public(channel) and public(text) and public(sender) and prefix==PREFIX then
-      if channel=="GUILD" and type(text)=="string" and text:match("^POS|") then mapMarkers.receive(text,sender)
+      if channel=="GUILD" and type(text)=="string" and (text:match("^GOLD|") or text=="GOLDQ|1") then gold.receive(text,sender)
+      elseif channel=="GUILD" and type(text)=="string" and text:match("^POS|") then mapMarkers.receive(text,sender)
       elseif (channel=="RAID" or channel=="PARTY") then raidTargets.receive(text,sender)
       elseif (channel=="GUILD" or channel=="WHISPER") and member(sender) and text=="PING|1" then
         local k=key(sender)
@@ -265,6 +293,8 @@ f:SetScript("OnEvent",function(_,event,...)
       elseif channel=="WHISPER" then party.receive(text,sender)
       end
     end
+  elseif event=="PLAYER_MONEY" then gold.dirty=true
+  elseif event=="PLAYER_GUILD_UPDATE" then gold.tick()
   elseif event=="PARTY_INVITE_REQUEST" then
     local sender=...; if public(sender) then party.invitation(sender) end
   elseif event=="GROUP_ROSTER_UPDATE" then party.tick()

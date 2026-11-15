@@ -185,7 +185,7 @@ function LayerSwapGuildMembers(api)
   end
   local f=CreateFrame("Frame","LayerSwapGuildPanel",UIParent)
   G.frame=f
-  f:SetSize(640,520); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
+  f:SetSize(api.goldSummary and 820 or 640,api.goldSummary and 550 or 520); f:SetPoint("CENTER"); f:SetClampedToScreen(true)
   f:SetMovable(true); f:EnableMouse(true); f:RegisterForDrag("LeftButton")
   f:SetScript("OnDragStart",f.StartMoving); f:SetScript("OnDragStop",f.StopMovingOrSizing)
   local bg=f:CreateTexture(nil,"BACKGROUND"); bg:SetAllPoints(); bg:SetColorTexture(.04,.05,.07,.95)
@@ -234,7 +234,7 @@ function LayerSwapGuildMembers(api)
       accept:SetScript("OnClick",function(self) self:SetChecked(api.toggleAccept()) end)
     end
   end
-  local status=label(-452); status:SetHeight(28); status:SetTextColor(.65,.73,.79)
+  local status=label(api.goldSummary and -480 or -452); status:SetHeight(28); status:SetTextColor(.65,.73,.79)
   local function notice(text)
     G.noticeUntil=GetTime()+15; G.lastNotice=text; status:SetText(text)
   end
@@ -250,6 +250,12 @@ function LayerSwapGuildMembers(api)
   textAt(f,366,-145,75,"LAYER")
   textAt(f,446,-145,45,"ADDON")
   textAt(f,508,-145,100,"STATUS")
+  local goldTotal
+  if api.goldSummary then
+    textAt(f,630,-145,170,"REPORTED GOLD")
+    goldTotal=textAt(f,16,-451,788)
+    G.goldTotal=goldTotal
+  end
   local function flatButton(parent,text,x,y,width,height,callback)
     local b=CreateFrame("Button",nil,parent)
     b:SetSize(width,height); b:SetPoint("TOPLEFT",x,y)
@@ -260,22 +266,24 @@ function LayerSwapGuildMembers(api)
     b:SetScript("OnClick",callback)
     return b
   end
+  if api.goldSummary then textAt(f,420,-111,370,"Automatic gold reporting: ON") end
   local buttons={}
   for i=1,PAGE do
     local b=CreateFrame("Button",nil,f)
-    b:SetSize(608,26); b:SetPoint("TOPLEFT",16,-166-(i-1)*28)
+    b:SetSize(api.goldSummary and 788 or 608,26); b:SetPoint("TOPLEFT",16,-166-(i-1)*28)
     local fill=b:CreateTexture(nil,"BACKGROUND"); fill:SetAllPoints()
     local shade=i%2==0 and .075 or .095
     fill:SetColorTexture(shade,shade+.018,shade+.03,.92)
     b:SetScript("OnEnter",function() fill:SetColorTexture(.10,.23,.25,.95) end)
     b:SetScript("OnLeave",function() fill:SetColorTexture(shade,shade+.018,shade+.03,.92) end)
     b.columns={textAt(b,10,-7,190),textAt(b,210,-7,130),textAt(b,350,-7,75),textAt(b,430,-7,50),textAt(b,492,-7,106)}
+    if api.goldSummary then b.columns[6]=textAt(b,614,-7,170) end
     b:SetScript("OnClick",function(self) notice(G.ask(self.member)); G.render() end)
     buttons[i]=b
   end
   local mini=CreateFrame("Frame","GuildLayersMini",UIParent)
   G.mini=mini
-  mini:SetSize(640,32); mini:SetPoint("TOP",UIParent,"TOP",0,-12)
+  mini:SetSize(api.openGold and 720 or 640,32); mini:SetPoint("TOP",UIParent,"TOP",0,-12)
   mini:SetClampedToScreen(true); mini:SetMovable(true); mini:EnableMouse(true)
   mini:RegisterForDrag("LeftButton"); mini:SetScript("OnDragStart",mini.StartMoving)
   mini:SetScript("OnDragStop",mini.StopMovingOrSizing)
@@ -283,12 +291,34 @@ function LayerSwapGuildMembers(api)
   local miniText=textAt(mini,12,-10,328,"Guild Layers")
   flatButton(mini,"Force guild switch",350,-3,178,26,function() notice(G.forceSwitch()); G.render() end)
   flatButton(mini,"Roster",536,-3,96,26,function() f:SetShown(not f:IsShown()) end)
+  if api.openGold then flatButton(mini,"Gold",638,-3,74,26,api.openGold) end
   mini:SetScript("OnEnter",function()
     if GameTooltip then GameTooltip:SetOwner(mini,"ANCHOR_BOTTOM"); GameTooltip:SetText(G.lastNotice or "Drag to move. Force guild switch requests an available different-layer guildmate.",1,1,1,true); GameTooltip:Show() end
   end)
   mini:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
   mini:Show()
+  local function goldRows()
+    local balances={}
+    if api.goldSummary then
+      local summary=api.goldSummary()
+      for _,r in ipairs(summary.rows) do balances[api.normalize(r.name):lower()]=r end
+      local total=summary.fresh>0 and api.goldFormat(summary.total) or "No fresh reports"
+      goldTotal:SetText("Total (fresh): "..total.."  |  "..summary.fresh.." / "..#summary.rows.." online incl. you  |  "..summary.stale.." stale, "..summary.unknown.." unknown")
+    end
+    return balances
+  end
+  local function goldRow(button,name,balances)
+    if not button.columns[6] then return end
+    local balance=balances[api.normalize(name):lower()]
+    local text="Unknown"
+    if balance and balance.copper then
+      text=api.goldFormat(balance.copper)
+      if balance.state=="Stale" then text=text.." (stale)" end
+    end
+    button.columns[6]:SetText(text)
+  end
   function G.render()
+    local balances=goldRows()
     local rows=G.rows(); local pages=math.max(1,math.ceil(#rows/PAGE))
     transition:SetText(G.transitionText())
     local d=G.destination
@@ -299,6 +329,7 @@ function LayerSwapGuildMembers(api)
       if r then
         b.member=r.name
         b.columns[1]:SetText(r.name)
+        goldRow(b,r.name,balances)
         b.columns[2]:SetText(tostring(r.level or "?").."  "..(r.class or ""))
         b.columns[3]:SetText(G.layerLabel(r.layer,r.zone))
         b.columns[4]:SetText(r.addon and (r.addon=="LayerSwap" and "LS" or "GL") or "-")
@@ -316,7 +347,7 @@ function LayerSwapGuildMembers(api)
     end
   end
   local function button(text,x,callback)
-    return flatButton(f,text,x,-486,130,26,callback)
+    return flatButton(f,text,x,api.goldSummary and -516 or -486,130,26,callback)
   end
   button("Previous",16,function() G.page=math.max(1,G.page-1); G.render() end)
   button("Next",154,function() G.page=G.page+1; G.render() end)
@@ -330,7 +361,7 @@ function LayerSwapGuildMembers(api)
     G.stockEnabled=not G.stockEnabled
     G.stockTick(); G.render()
   end)
-  button("Close",494,function() f:Hide() end)
+  button("Close",api.goldSummary and 674 or 494,function() f:Hide() end)
   f:Hide()
   f:SetScript("OnShow",function() G.poll(); G.roster(); G.stockTick(); G.render() end)
   f:RegisterEvent("GUILD_ROSTER_UPDATE"); f:RegisterEvent("CHAT_MSG_ADDON")

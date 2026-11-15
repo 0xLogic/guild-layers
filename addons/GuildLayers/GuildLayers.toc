@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Guild Layers
 ## Notes: Guild layer reports and one-click party joining. /guildlayers
-## Version: 1.7.0
+## Version: 1.8.0
 ## SavedVariables: GuildLayersDB
 GuildMembers.lua
 Version.lua
@@ -9,5 +9,6 @@ Party.lua
 Escape.lua
 Map.lua
 Raid.lua
+Gold.lua
 Core.lua
 Bindings.xml

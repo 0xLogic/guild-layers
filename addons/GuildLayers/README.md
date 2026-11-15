@@ -1,4 +1,4 @@
-# Guild Layers 1.7.0 — WoW Forever
+# Guild Layers 1.8.0 — WoW Forever
 
 Install the GuildLayers folder in Interface/AddOns on both players, enable it,
 then open `/guildlayers` (also `/lsguild`). LayerSwap is not required. This package
@@ -139,3 +139,22 @@ right-click to focus it. Open before combat. Unit-token changes wait until comba
 ends; displayed names always follow the configured token. No network GUID selects
 a target. These are hardware actions, not autonomous combat target changes.
 Pings highlight for 10 seconds; target names use locally visible group units.
+
+## Reported guild gold (1.8)
+Gold reporting is automatic and always on while Guild Layers is enabled. There
+is no gold-sharing toggle. The roster shows each online member's reported balance
+and a fresh-report total below the list. Gold on the mini bar or /guildlayers gold
+opens a detailed, paginated view with report ages.
+
+The addon broadcasts this character's carried copper balance to the guild. Every
+guild member with this version can view received reports; these are not officer-
+private. Balances are self-reported client observations, not server-certified.
+Updates are coalesced to at most once per five seconds and refreshed every 30
+seconds. Fresh reports (up to 90 seconds old) count toward the total. Older reports
+are excluded and expire after five minutes. Offline/non-member reports are removed.
+Unknown is not zero; reporting zero is a valid observation. Only online roster
+characters are counted once, never player accounts or inferred alts. Bank, mail,
+auction proceeds and item value are excluded. Received balances are memory-only
+and clear on reload or guild change. No individual gold-sharing preference is saved.
+Other members must install this version to contribute; disabling or removing the
+addon stops its reporting. No addon can force reports from an absent client.
