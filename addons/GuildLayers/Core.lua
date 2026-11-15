@@ -1,6 +1,6 @@
 local PREFIX="GuildLayers1"
 local layer,mapID,samples,sampleAt=nil,nil,{},0
-local ui,party,escape
+local ui,party,escape,mapMarkers,raidTargets
 local peers={}
 local notifiedVersion
 local lastPresenceQuery=-100
@@ -144,6 +144,12 @@ f:SetScript("OnEvent",function(_,event,...)
     if GuildLayersDB.autoAcceptGuild==nil then GuildLayersDB.autoAcceptGuild=true end
     local radius=tonumber(GuildLayersDB.hordeRadius)
     GuildLayersDB.hordeRadius=radius and radius==radius and math.max(5,math.min(100,radius)) or 40
+    if GuildLayersDB.shareLocation==nil then GuildLayersDB.shareLocation=true end
+    local mapAPI={member=member,key=key,now=GetTime,public=public,layer=function() return layer end}
+    mapMarkers=GuildLayersMap(mapAPI);raidTargets=GuildLayersRaid(mapAPI)
+    GuildLayersTargetPing=raidTargets.ping;GuildLayersRaidToggle=raidTargets.toggle
+    C_Timer.NewTicker(5,mapMarkers.broadcast)
+    C_Timer.NewTicker(1,function() mapMarkers.draw();raidTargets.tick() end)
     party=GuildLayersParty({now=GetTime,key=key,member=member,grouped=IsInGroup,send=send,status=status,
       autoAcceptGuild=function() return GuildLayersDB.autoAcceptGuild==true end,
       sendJoin=function(n,token)
@@ -218,7 +224,12 @@ f:SetScript("OnEvent",function(_,event,...)
     for _,e in ipairs({"CHAT_MSG_ADDON","PARTY_INVITE_REQUEST","GROUP_ROSTER_UPDATE","ZONE_CHANGED_NEW_AREA","SHARD_TRANSFER"}) do pcall(f.RegisterEvent,f,e) end
     SLASH_GUILDLAYERS1="/guildlayers"
     SlashCmdList.GUILDLAYERS=function(msg)
-      if msg=="status" then
+      if msg=="mapshare" then
+        GuildLayersDB.shareLocation=not GuildLayersDB.shareLocation
+        print("Guild Layers: location sharing "..(GuildLayersDB.shareLocation and "on" or "off"))
+      elseif msg=="raid" then raidTargets.toggle()
+      elseif msg=="ping" then raidTargets.ping()
+      elseif msg=="status" then
         print("Guild Layers "..GuildLayersVersion..": presence attempts="..presenceStats.sent..
           ", received="..presenceStats.received..", last send result="..presenceStats.lastResult.." (0=accepted)")
       else SlashCmdList.LAYERSWAPGUILD(msg) end
@@ -233,7 +244,9 @@ f:SetScript("OnEvent",function(_,event,...)
   elseif event=="CHAT_MSG_ADDON" then
     local prefix,text,channel,sender=...
     if public(prefix) and public(channel) and public(text) and public(sender) and prefix==PREFIX then
-      if (channel=="GUILD" or channel=="WHISPER") and member(sender) and text=="PING|1" then
+      if channel=="GUILD" and type(text)=="string" and text:match("^POS|") then mapMarkers.receive(text,sender)
+      elseif (channel=="RAID" or channel=="PARTY") then raidTargets.receive(text,sender)
+      elseif (channel=="GUILD" or channel=="WHISPER") and member(sender) and text=="PING|1" then
         local k=key(sender)
         if k~=key(name("player")) and (not presenceReplies[k] or GetTime()-presenceReplies[k]>=15) then
           presenceReplies[k]=GetTime(); advertise(sender)

@@ -1,4 +1,4 @@
-# Guild Layers 1.6.0 — WoW Forever
+# Guild Layers 1.7.0 — WoW Forever
 
 Install the GuildLayers folder in Interface/AddOns on both players, enable it,
 then open `/guildlayers` (also `/lsguild`). LayerSwap is not required. This package
@@ -124,3 +124,18 @@ No claim of live success is made by the package.
 To remove: disable/delete GuildLayers. Saved settings may be retained. Local installer
 backs up and removes only our prior appended LayerSwap bridge/TOC entry so both UIs
 do not run simultaneously. It does not modify stock hosting policies or guild rules.
+
+## Map and target pings (1.7)
+Updated guildmates share outdoor zone coordinates every 5 seconds, guild-only.
+Open their zone map to see markers; hover for name, raw layer ID and report age.
+Reports expire after 30 seconds/offline and are not saved. Toggle your sharing
+with /guildlayers mapshare. Missing locations are unknown. Members need 1.7;
+LayerSwap does not supply coordinates. Continent/world projections are not included.
+
+Bind Ping my target under Guild Layers in Key Bindings, or /guildlayers ping.
+Guild members in your raid/party receive the target name. /guildlayers raid opens
+a movable target panel: left-click a row to target that member's current target,
+right-click to focus it. Open before combat. Unit-token changes wait until combat
+ends; displayed names always follow the configured token. No network GUID selects
+a target. These are hardware actions, not autonomous combat target changes.
+Pings highlight for 10 seconds; target names use locally visible group units.

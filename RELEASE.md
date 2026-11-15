@@ -1,8 +1,8 @@
-Guild Layers 1.6.0
+Guild Layers 1.7.0
 
-- Organized roster with aligned columns, alternating dark rows and compact controls.
-- Draggable top mini bar with current/destination layers, Force guild switch and Roster buttons.
-- Force guild switch selects a fresh available different-layer host in the same zone. If none is known, opens the roster and refreshes reports.
-- /guildlayersmini hides/shows the mini bar. Hover it for the latest request status.
-- 34 headless tests pass. Visual verification and live transfer remain pending; server restrictions still apply.
-- Reload the UI after updating.
+- Guild-only outdoor location sharing every five seconds, with zone-map markers and 30-second report expiry. /guildlayers mapshare toggles sharing.
+- Custom target-ping key binding and /guildlayers ping for guild members in your raid or party.
+- /guildlayers raid opens a movable target panel. Left click targets the member's target; right click sets focus. Open before combat; automatic protected targeting is not performed.
+- 40 headless tests pass. Live multi-client map placement and secure action verification remain pending.
+- Reload the UI after updating. Other members need 1.7 for the new messages.
+- This release adds files: download the ZIP or the current updater attached here; older strict updaters reject the expanded archive.

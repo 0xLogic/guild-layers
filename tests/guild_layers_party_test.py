@@ -82,7 +82,7 @@ class PartyTests(unittest.TestCase):
    invites=0; function InviteUnit() invites=invites+1 end
    local create=CreateFrame
    CreateFrame=function(...) local f=create(...); if not coreFrame then coreFrame=f end; return f end''')
-  for path in ('LayerSwapGuild/GuildMembers.lua','GuildLayers/Version.lua','GuildLayers/Party.lua','GuildLayers/Escape.lua','GuildLayers/Core.lua'):
+  for path in ('LayerSwapGuild/GuildMembers.lua','GuildLayers/Version.lua','GuildLayers/Party.lua','GuildLayers/Escape.lua','GuildLayers/Map.lua','GuildLayers/Raid.lua','GuildLayers/Core.lua'):
    l.execute((ROOT/'addons'/path).read_text())
   l.execute('''coreFrame.scripts.OnEvent(coreFrame,"PLAYER_LOGIN")
    assert(GuildLayers and GuildLayersDB.hosting)

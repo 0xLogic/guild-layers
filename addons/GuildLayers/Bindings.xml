@@ -1,0 +1,4 @@
+<Bindings>
+<Binding name="GUILDLAYERS_PING" header="GUILDLAYERS">if GuildLayersTargetPing then GuildLayersTargetPing() end</Binding>
+<Binding name="GUILDLAYERS_RAID">if GuildLayersRaidToggle then GuildLayersRaidToggle() end</Binding>
+</Bindings>

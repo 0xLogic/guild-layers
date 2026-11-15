@@ -13,7 +13,7 @@ import urllib.request
 import zipfile
 
 API='https://api.github.com/repos/0xLogic/guild-layers/releases/latest'
-FILES={'GuildLayers.toc','GuildMembers.lua','Core.lua','Party.lua','Escape.lua','Version.lua','README.md'}
+FILES={'GuildLayers.toc','GuildMembers.lua','Core.lua','Party.lua','Escape.lua','Map.lua','Raid.lua','Bindings.xml','Version.lua','README.md'}
 LIMIT=5*1024*1024
 
 def fetch(url):
